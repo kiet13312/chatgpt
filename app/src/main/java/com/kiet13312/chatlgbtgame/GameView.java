@@ -123,4 +123,10 @@ public final class GameView extends View {
         if(xp>=level*100){xp-=level*100;level++;gems+=2;}persist();invalidate();}
     private void addCode(String s){if(code.size()<8)code.add(s);else notice="Tối đa 8 khối trong bản này";}
     private void back(){screen="HUB";over=false;paused=false;studioRun=false;reeling=false;persist();invalidate();}
+
+    public boolean backToHub(){
+        if ("HUB".equals(screen)) return false;
+        back();
+        return true;
+    }
 }
