@@ -228,8 +228,141 @@ public final class GameView extends View {
     private void startHeist(){screen="HEIST";heistGems=0;heroX=180;heroY=430;guardX=760;over=false;heistWon=false;}
     private void heistScreen(Canvas c){bg(c,Color.rgb(38,43,69),Color.rgb(91,72,75));header(c,"FURNI HEIST");for(int row=0;row<5;row++)for(int col=0;col<9;col++)box(c,95+col*86,93+row*78,80,72,(row+col)%2==0?Color.rgb(65,72,94):Color.rgb(76,78,100),9);for(int i=0;i<3;i++){p.setColor(i<heistGems?Color.GRAY:GOLD);c.drawCircle(230+i*180,170+(i%2)*130,12,p);}p.setColor(GREEN);c.drawCircle(875,470,24,p);txt(c,"EXIT",875,475,10,WHITE,true,Paint.Align.CENTER);p.setColor(BLUE);c.drawCircle(heroX,heroY,17,p);txt(c,"K",heroX,heroY+6,15,WHITE,true,Paint.Align.CENTER);p.setColor(RED);c.drawCircle(guardX,430,19,p);txt(c,"!",guardX,437,20,WHITE,true,Paint.Align.CENTER);txt(c,"Đá quý "+heistGems+"/3 • Chạm nền để di chuyển",480,512,14,WHITE,true,Paint.Align.CENTER);if(over)result(c,heistWon?"THOÁT THÀNH CÔNG":"BỊ BẮT RỒI",heistWon?"+150 xu":"Hãy thử đường khác",heistWon);}
     
-    private void startSurvival(){screen="SURVIVAL";wood=8;stone=5;blocks=0;buildMode=false;Arrays.fill(blocksPlaced,false);}
-    private void survivalScreen(Canvas c){bg(c,Color.rgb(113,188,236),Color.rgb(76,143,89));header(c,"SINH TỒN KHỐI");txt(c,"Gỗ "+wood+"   Đá "+stone+"   Khối "+blocks,480,96,17,WHITE,true,Paint.Align.CENTER);for(int row=0;row<5;row++)for(int col=0;col<8;col++){int i=row*8+col;float x=150+col*84,y=115+row*76;box(c,x,y,78,70,blocksPlaced[i]?Color.rgb(151,105,68):(i%3==0?Color.rgb(147,174,100):Color.rgb(98,157,93)),7);}box(c,830,118,112,280,DARK,14);btn(c,"ĐÀO GỖ",840,135,92,48,Color.rgb(153,108,68));btn(c,"ĐÀO ĐÁ",840,197,92,48,Color.GRAY);btn(c,"XÂY KHỐI",840,259,92,48,GREEN);btn(c,"CHẾ TẠO",840,321,92,48,PURPLE);txt(c,buildMode?"Chọn ô trống để đặt khối":"Thu thập vật liệu và xây dựng",520,510,15,WHITE,true,Paint.Align.CENTER);}
+
+    private void cityTick(float d){
+        cityClock+=d;
+        if(cityJob&&Math.hypot((inCar?carX:cityX)-jobX,(inCar?carY:cityY)-jobY)<58){
+            cityJob=false;earn(180,35);notice="Giao hàng thành công! +180 xu";
+        }
+    }
+    private void startCity(){screen="CITY";inCar=false;cityClock=0;cityX=Math.max(100,Math.min(690,cityX));cityY=Math.max(150,Math.min(455,cityY));if(carX<80||carX>720){carX=280;carY=360;}persist();}
+    private void startBuild(String backTo){screen="BUILD";buildReturn=backTo;eraseMode=false;selectedBlock=1;over=false;}
+    private void cityBuilding(Canvas c,float x,float y,float w,float h,int color,String name){
+        box(c,x+5,y+7,w,h,Color.argb(55,18,30,38),8);box(c,x,y,w,h,color,8);
+        box(c,x+5,y+5,w-10,13,Color.argb(85,255,255,255),4);
+        for(int row=0;row<2;row++)for(int col=0;col<3;col++){
+            box(c,x+12+col*(w-28)/3,y+27+row*32,15,19,Color.rgb(126,190,211),3);
+        }
+        txt(c,name,x+w/2,y+h-7,10,WHITE,true,Paint.Align.CENTER);
+    }
+    private void cityCar(Canvas c,float x,float y,int color,boolean player){
+        p.setColor(Color.rgb(35,43,52));rr.set(x-28,y-16,x+28,y+17);c.drawRoundRect(rr,8,8,p);
+        p.setColor(color);rr.set(x-24,y-19,x+24,y+13);c.drawRoundRect(rr,9,9,p);
+        p.setColor(Color.rgb(148,207,225));rr.set(x-11,y-15,x+13,y-3);c.drawRoundRect(rr,4,4,p);
+        p.setColor(Color.rgb(245,245,226));c.drawRect(x-22,y+7,x-15,y+12,p);c.drawRect(x+15,y+7,x+22,y+12,p);
+        if(player)txt(c,"K",x,y+4,11,WHITE,true,Paint.Align.CENTER);
+    }
+    private void cityNpc(Canvas c,float x,float y,int color){
+        p.setColor(Color.argb(60,20,30,40));c.drawOval(x-10,y+10,x+10,y+15,p);
+        p.setColor(color);rr.set(x-8,y-4,x+8,y+13);c.drawRoundRect(rr,5,5,p);
+        p.setColor(Color.rgb(238,190,150));c.drawCircle(x,y-11,7,p);
+    }
+    private void cityScreen(Canvas c){
+        int sky=cityClock%48<24?Color.rgb(115,190,235):Color.rgb(39,57,91);
+        bg(c,sky,cityClock%48<24?Color.rgb(166,204,139):Color.rgb(45,65,83));
+        // city blocks and sidewalks
+        p.setColor(Color.rgb(171,174,165));c.drawRect(0,105,750,480,p);
+        p.setColor(Color.rgb(72,78,85));c.drawRect(0,270,750,380,p);c.drawRect(330,105,415,480,p);
+        p.setColor(Color.rgb(235,216,135));for(int i=0;i<8;i++){c.drawRect(30+i*92,321,75+i*92,328,p);c.drawRect(351,125+i*43,358,145+i*43,p);}
+        p.setColor(Color.rgb(205,202,184));c.drawRect(0,250,750,270,p);c.drawRect(0,380,750,401,p);c.drawRect(310,105,330,480,p);c.drawRect(415,105,435,480,p);
+        cityBuilding(c,35,115,120,120,Color.rgb(178,117,91),"CAFE");
+        cityBuilding(c,185,112,110,116,Color.rgb(91,134,169),"SHOP");
+        cityBuilding(c,470,110,120,124,Color.rgb(155,112,178),"HOTEL");
+        cityBuilding(c,615,115,115,116,Color.rgb(198,151,86),"GARAGE");
+        cityBuilding(c,30,414,150,55,Color.rgb(91,145,111),"PARK");
+        cityBuilding(c,515,414,210,54,Color.rgb(170,135,97),"HOME");
+        // crossings and parking spaces
+        p.setColor(Color.argb(195,255,255,255));for(int i=0;i<7;i++){c.drawRect(300+i*17,276,309+i*17,309,p);c.drawRect(432+i*17,344,441+i*17,376,p);}
+        // day/night overlay and street lamps
+        if(cityClock%48>=24){p.setColor(Color.argb(68,10,19,45));c.drawRect(0,68,750,480,p);}
+        for(int i=0;i<4;i++){float x=70+i*190;p.setColor(Color.rgb(71,76,79));c.drawRect(x,232,x+4,262,p);p.setColor(GOLD);c.drawCircle(x+2,230,8,p);}
+        cityNpc(c,130+(float)Math.sin(cityClock)*18,290,Color.rgb(232,114,94));
+        cityNpc(c,550+(float)Math.sin(cityClock*.8f)*20,395,Color.rgb(115,100,190));
+        cityNpc(c,250+(float)Math.cos(cityClock*.6f)*12,394,Color.rgb(72,151,115));
+        cityNpc(c,665+(float)Math.cos(cityClock*.7f)*16,250,Color.rgb(205,135,74));
+        cityCar(c,220,345,Color.rgb(221,83,75),false);cityCar(c,490,292,Color.rgb(220,206,95),false);
+        if(inCar)cityCar(c,carX,carY,Color.rgb(64,147,218),true);else cityNpc(c,cityX,cityY,Color.rgb(49,95,170));
+        if(cityJob){p.setColor(GOLD);c.drawCircle(jobX,jobY,18,p);txt(c,"$",jobX,jobY+6,19,DARK,true,Paint.Align.CENTER);}
+        header(c,"VICE BAY • CITY LIFE");
+        box(c,14,78,224,92,Color.argb(220,18,36,57),12);
+        txt(c,"THÀNH PHỐ MỞ",28,103,14,WHITE,true,Paint.Align.LEFT);
+        txt(c,inCar?"Đang lái xe":"Đang đi bộ",28,128,13,Color.rgb(215,230,243),false,Paint.Align.LEFT);
+        txt(c,cityJob?"Giao hàng: đến dấu $":"Tự do khám phá thành phố",28,151,11,GOLD,true,Paint.Align.LEFT);
+        btn(c,inCar?"XUỐNG XE":"LÁI XE",765,82,174,40,BLUE);
+        btn(c,cityJob?"ĐANG GIAO HÀNG":"NHẬN VIỆC +180",765,130,174,40,GREEN);
+        btn(c,hasCar?"XE CỦA TÔI":"MUA XE 300",765,178,174,40,PURPLE);
+        btn(c,hasHouse?"XÂY / VÀO NHÀ":"MUA NHÀ 450",765,226,174,40,GOLD);
+        txt(c,"Việc làm • cửa hàng • gara • công viên",850,296,12,WHITE,true,Paint.Align.CENTER);
+        txt(c,"Điều khiển",850,335,13,WHITE,true,Paint.Align.CENTER);
+        btn(c,"▲",840,350,72,40,BLUE);btn(c,"◀",765,397,72,40,BLUE);btn(c,"▼",840,397,72,40,BLUE);btn(c,"▶",915,397,40,40,BLUE);
+        box(c,14,480,720,42,Color.argb(205,18,36,57),10);
+        txt(c,"Khám phá • lái xe • làm nhiệm vụ giao hàng • sở hữu nhà riêng",28,506,13,WHITE,true,Paint.Align.LEFT);
+    }
+    private void moveCity(int dx,int dy){
+        float step=inCar?58:34;
+        if(inCar){carX=Math.max(40,Math.min(720,carX+dx*step));carY=Math.max(100,Math.min(455,carY+dy*step));}
+        else{cityX=Math.max(40,Math.min(720,cityX+dx*step));cityY=Math.max(100,Math.min(455,cityY+dy*step));}
+        if(cityJob&&Math.hypot((inCar?carX:cityX)-jobX,(inCar?carY:cityY)-jobY)<58){cityJob=false;earn(180,35);notice="Giao hàng thành công! +180 xu";}
+        persist();
+    }
+    private void buildScreen(Canvas c){
+        bg(c,Color.rgb(116,190,230),Color.rgb(102,166,100));
+        header(c,"XÂY NHÀ KIỂU KHỐI");
+        if(!hasHouse){
+            box(c,240,130,480,270,Color.argb(238,22,43,63),20);
+            txt(c,"MUA LÔ ĐẤT RIÊNG",480,190,25,WHITE,true,Paint.Align.CENTER);
+            txt(c,"Sở hữu khu đất để xây ngôi nhà của bạn",480,235,16,WHITE,false,Paint.Align.CENTER);
+            txt(c,"Giá 450 xu • lưu nhà vĩnh viễn trên máy",480,268,14,GOLD,true,Paint.Align.CENTER);
+            btn(c,"MUA ĐẤT 450 XU",350,310,260,55,GREEN);
+            return;
+        }
+        txt(c,"GỖ "+wood+"    ĐÁ "+stone+"    KÍNH "+glass+"    Khối đã đặt "+blocks,420,91,16,WHITE,true,Paint.Align.CENTER);
+        txt(c,"Chạm ô để đặt • bật PHÁ để thu lại vật liệu",420,111,12,WHITE,false,Paint.Align.CENTER);
+        final int x0=65,y0=128,tw=48,th=43;
+        int[] colors={Color.TRANSPARENT,Color.rgb(151,103,62),Color.rgb(126,132,139),Color.rgb(112,190,221),Color.rgb(173,81,68),Color.rgb(71,150,75),Color.rgb(125,77,48)};
+        for(int row=0;row<8;row++)for(int col=0;col<14;col++){
+            int idx=row*14+col;float x=x0+col*tw,y=y0+row*th;
+            box(c,x,y,44,39,row==7?Color.rgb(126,169,83):Color.argb(85,240,250,255),3);
+            int type=houseBlocks[idx];
+            if(type>0){
+                box(c,x+2,y+2,40,35,colors[type],3);
+                if(type==1||type==4){p.setColor(Color.argb(75,35,23,17));c.drawLine(x+3,y+13,x+41,y+13,p);c.drawLine(x+3,y+25,x+41,y+25,p);}
+                if(type==2){p.setColor(Color.argb(70,255,255,255));c.drawLine(x+5,y+11,x+39,y+11,p);c.drawLine(x+8,y+25,x+35,y+25,p);}
+                if(type==3){p.setColor(Color.argb(145,255,255,255));c.drawLine(x+8,y+5,x+8,y+31,p);c.drawLine(x+28,y+5,x+28,y+31,p);}
+                if(type==5){p.setColor(Color.rgb(43,112,53));c.drawCircle(x+12,y+13,5,p);c.drawCircle(x+28,y+24,7,p);}
+                if(type==6){box(c,x+11,y+4,22,31,Color.rgb(102,63,42),2);p.setColor(GOLD);c.drawCircle(x+28,y+21,2,p);}
+            }
+        }
+        txt(c,"VẬT LIỆU",864,104,13,WHITE,true,Paint.Align.CENTER);
+        String[] names={"GỖ","ĐÁ","KÍNH","GẠCH","LÁ","CỬA"};
+        int[] palette={1,2,3,4,5,6};
+        for(int i=0;i<6;i++){int type=palette[i];int y=116+i*49;box(c,790,y,150,42,selectedBlock==type?Color.rgb(255,235,164):Color.rgb(31,58,79),8);p.setColor(colors[type]);c.drawRect(800,y+9,824,y+33,p);txt(c,names[i],838,y+27,14,selectedBlock==type?DARK:WHITE,true,Paint.Align.LEFT);}
+        btn(c,eraseMode?"ĐANG PHÁ":"PHÁ KHỐI",790,416,150,40,eraseMode?RED:Color.rgb(87,104,120));
+        btn(c,"CHẾ TẠO KÍNH",790,464,150,40,PURPLE);
+        box(c,65,482,690,31,Color.argb(195,18,40,59),8);
+        txt(c,"Mẹo: Dựng tường, cửa và mái theo ý thích. Nhà được tự động lưu.",410,503,12,WHITE,false,Paint.Align.CENTER);
+    }
+    private void placeHouseBlock(int idx){
+        if(idx<0||idx>=houseBlocks.length)return;
+        int old=houseBlocks[idx];
+        if(eraseMode){
+            if(old>0){houseBlocks[idx]=0;if(old==1||old==5||old==6)wood++;else if(old==3)glass++;else stone++;}
+        }else if(old==0){
+            if(selectedBlock==1||selectedBlock==5||selectedBlock==6){if(wood<=0){notice="Không đủ gỗ";return;}wood--;}
+            else if(selectedBlock==2||selectedBlock==4){if(stone<=0){notice="Không đủ đá";return;}stone--;}
+            else {if(glass<=0){notice="Không đủ kính";return;}glass--;}
+            houseBlocks[idx]=(byte)selectedBlock;
+        }
+        blocks=0;for(byte v:houseBlocks)if(v>0)blocks++;
+        persist();
+    }
+    private void craftGlass(){
+        if(wood>=2&&stone>=1){wood-=2;stone--;glass+=3;persist();notice="Chế tạo được 3 kính";}
+        else notice="Cần 2 gỗ và 1 đá để chế tạo kính";
+    }
+
+    private void startSurvival(){startBuild("WORLD");}
+    private void survivalScreen(Canvas c){buildScreen(c);}
     
     private void startRace(){screen="RACE";foes.clear();raceLane=1;raceTime=0;spawn=.7f;t=0;over=false;}
     private void raceTick(float d){t+=d;raceTime=(int)t;spawn-=d;if(spawn<=0){foes.add(new Foe(310+rng.nextInt(3)*170,-25,135+rng.nextInt(55)));spawn=1;}Iterator<Foe>i=foes.iterator();while(i.hasNext()){Foe f=i.next();f.y+=f.s*d;if(f.y>500)i.remove();else if(Math.abs(f.x-(310+raceLane*170))<45&&Math.abs(f.y-410)<60)over=true;}}
