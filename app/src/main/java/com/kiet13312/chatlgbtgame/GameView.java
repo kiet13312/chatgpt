@@ -102,7 +102,7 @@ public final class GameView extends View {
         setFocusable(true);}
     private Bitmap vector(int id){try{Drawable d=getResources().getDrawable(id,null);Bitmap b=Bitmap.createBitmap(720,480,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);d.setBounds(0,0,720,480);d.draw(c);return b;}catch(Exception e){return null;}}
     private Bitmap loadAssetBitmap(String name){
-        try(InputStream in=getAssets().open(name)){return BitmapFactory.decodeStream(in);}
+        try(InputStream in=getContext().getAssets().open(name)){return BitmapFactory.decodeStream(in);}
         catch(Exception e){return null;}
     }
     private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).putFloat("worldX",worldX).putFloat("worldY",worldY).putInt("wood",wood).putInt("stone",stone).putInt("glass",glass).putBoolean("hasCar",hasCar).putBoolean("hasHouse",hasHouse).putFloat("cityX",cityX).putFloat("cityY",cityY).putFloat("carX",carX).putFloat("carY",carY).putString("houseBlocks",encodeHouse()).apply();}
