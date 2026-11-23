@@ -321,7 +321,7 @@ public final class GameView extends View {
         p.setShader(new LinearGradient(x,y,x+w,y+h,top,bottom,Shader.TileMode.CLAMP));c.drawRect(x,y,x+w,y+h,p);p.setShader(null);
         if(index==0){
             p.setColor(Color.rgb(255,213,133));c.drawCircle(x+w*.75f,y+h*.18f,30,p);
-            int[] heights={.42f,.30f,.50f,.36f,.60f,.43f,.54f};
+            float[] heights={.42f,.30f,.50f,.36f,.60f,.43f,.54f};
             for(int i=0;i<heights.length;i++){float bx=x+12+i*49,by=y+h*(.68f-heights[i]*.55f);box(c,bx,by,39,y+h*.75f-by,Color.rgb(37+i*3,55+i*2,83+i*2),4);for(int r=0;r<3;r++)for(int q=0;q<2;q++){p.setColor(Color.rgb(255,210,120));c.drawRect(bx+7+q*17,by+10+r*16,bx+13+q*17,by+17+r*16,p);}}
             p.setColor(Color.rgb(55,61,69));c.drawRect(x,y+h*.77f,x+w,y+h,p);p.setColor(Color.rgb(245,207,115));for(int i=0;i<5;i++)c.drawRect(x+25+i*75,y+h*.875f,x+55+i*75,y+h*.89f,p);
             p.setColor(Color.rgb(225,79,70));rr.set(x+w*.42f,y+h*.74f,x+w*.72f,y+h*.84f);c.drawRoundRect(rr,12,12,p);p.setColor(Color.rgb(41,49,61));c.drawCircle(x+w*.48f,y+h*.845f,10,p);c.drawCircle(x+w*.66f,y+h*.845f,10,p);
