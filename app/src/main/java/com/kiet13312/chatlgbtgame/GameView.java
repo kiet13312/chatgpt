@@ -28,10 +28,14 @@ public final class GameView extends View {
     private final SharedPreferences save; private final Random rng=new Random();
     private final Bitmap gardenArt,fishArt,studioArt;
     private String screen="WORLD",notice="Chào mừng đến với Chat LGBT Game!",plantPick="PEA";
-    private int coins,gems,energy,xp,level,rod,character,dayFish,miniScore,wood=8,stone=5,blocks;
-    private boolean giftClaimed,paused,over,hooked,casting,reeling,studioRun,buildMode,heistWon;
+    private int coins,gems,energy,xp,level,rod,character,dayFish,miniScore,wood=32,stone=24,glass=8,blocks;
+    private boolean giftClaimed,paused,over,hooked,casting,reeling,studioRun,buildMode,heistWon,hasCar,hasHouse,inCar,cityJob,eraseMode;
     private int sun=200,kills,gardenLevel=1,fishKg=35,fishPct,heistGems,raceLane=1,raceTime,tankHp=3,tankPts,variable=1;
     private float t,last,spawn,sunTick,fishWait,fishX=610,fishY=310,guardX=760,heroX=180,heroY=430,studioX=770;
+    private float cityClock,cityX=280,cityY=360,carX=280,carY=360,jobX=720,jobY=175;
+    private String buildReturn="WORLD";
+    private int selectedBlock=1;
+    private final byte[] houseBlocks=new byte[112];
     private final Plant[][] garden=new Plant[5][9];
     private final boolean[] blocksPlaced=new boolean[40];
     private final List<Zombie> zombies=new ArrayList<>();
@@ -70,7 +74,10 @@ public final class GameView extends View {
         new Landmark(2210,450,"STRATEGY CASTLE","Chiến thuật thủ thành","MOBA",PURPLE),
         new Landmark(1120,950,"COLOR TAG ARENA","Sinh tồn né chạm","TAG",RED),
         new Landmark(1660,1450,"BUILD & CREATE","Sandbox tự do","SURVIVAL",GREEN),
-        new Landmark(1030,570,"TOWN TYCOON","Xây dựng thị trấn","TYCOON",Color.rgb(205,151,67))
+        new Landmark(1030,570,"TOWN TYCOON","Xây dựng thị trấn","TYCOON",Color.rgb(205,151,67)),
+        new Landmark(1710,820,"VICE BAY CITY","Thành phố mở • xe • việc làm","CITY",BLUE),
+        new Landmark(1420,1180,"KHU NHÀ Ở","Mua đất • xây nhà khối","BUILD",GOLD),
+        new Landmark(2020,930,"SHOWROOM XE","Mua và lái thử xe","GARAGE",RED)
     };
 
     private static final class Plant { String type; int hp; float cd; Plant(String t){type=t;hp=t.equals("NUT")?220:70;} }
@@ -79,17 +86,17 @@ public final class GameView extends View {
     private static final class Foe {float x,y,s;Foe(float a,float b,float c){x=a;y=b;s=c;} }
 
     public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);save=c.getSharedPreferences("chat_lgbt_game",Context.MODE_PRIVATE);
-        coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);
+        coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);wood=save.getInt("wood",32);stone=save.getInt("stone",24);glass=save.getInt("glass",8);hasCar=save.getBoolean("hasCar",false);hasHouse=save.getBoolean("hasHouse",false);cityX=save.getFloat("cityX",280);cityY=save.getFloat("cityY",360);carX=save.getFloat("carX",280);carY=save.getFloat("carY",360);
         gardenArt=vector(R.drawable.garden_art);fishArt=vector(R.drawable.fishing_art);studioArt=vector(R.drawable.studio_art);
-        worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;
+        worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;String savedHouse=save.getString("houseBlocks","");for(int i=0;i<Math.min(houseBlocks.length,savedHouse.length());i++)houseBlocks[i]=(byte)Math.max(0,savedHouse.charAt(i)-48);
         for(int i=0;i<puzzleTiles.length;i++)puzzleTiles[i]=i/4;
         setFocusable(true);}
     private Bitmap vector(int id){try{Drawable d=getResources().getDrawable(id,null);Bitmap b=Bitmap.createBitmap(720,480,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);d.setBounds(0,0,720,480);d.draw(c);return b;}catch(Exception e){return null;}}
-    private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).putFloat("worldX",worldX).putFloat("worldY",worldY).apply();}
+    private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).putFloat("worldX",worldX).putFloat("worldY",worldY).putInt("wood",wood).putInt("stone",stone).putInt("glass",glass).putBoolean("hasCar",hasCar).putBoolean("hasHouse",hasHouse).putFloat("cityX",cityX).putFloat("cityY",cityY).putFloat("carX",carX).putFloat("carY",carY).putString("houseBlocks",encodeHouse()).apply();}
 
     @Override protected void onDraw(Canvas c){super.onDraw(c);scale=Math.min(getWidth()/W,getHeight()/H);ox=(getWidth()-W*scale)/2;oy=(getHeight()-H*scale)/2;c.save();c.translate(ox,oy);c.scale(scale,scale);long now=System.nanoTime();float dt=last==0?.016f:Math.min(.05f,(now-last)/1e9f);last=now;tick(dt);
-        switch(screen){case "HUB":case "WORLD":worldScreen(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "ARCADE":arcadeScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
-    private void tick(float d){if(screen.equals("GARDEN")&&!paused&&!over)gardenTick(d);if(screen.equals("FISH")&&!over)fishTick(d);if(screen.equals("STUDIO")&&studioRun){studioX+=d*(35+variable*5);if(studioX>915)studioX=705;}if(screen.equals("TANK")&&!over)tankTick(d);if(screen.equals("HEIST")&&!over){guardX-=d*14;if(guardX<220)guardX=760;if(Math.abs(guardX-heroX)<25&&Math.abs(heroY-430)<42)over=true;}if(screen.equals("RACE")&&!over)raceTick(d);if(screen.equals("WORLD"))worldTick(d);if(screen.equals("ARCADE"))arcadeTick(d);}
+        switch(screen){case "HUB":case "WORLD":worldScreen(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "ARCADE":arcadeScreen(c);break;case "CITY":cityScreen(c);break;case "BUILD":buildScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
+    private void tick(float d){if(screen.equals("GARDEN")&&!paused&&!over)gardenTick(d);if(screen.equals("FISH")&&!over)fishTick(d);if(screen.equals("STUDIO")&&studioRun){studioX+=d*(35+variable*5);if(studioX>915)studioX=705;}if(screen.equals("TANK")&&!over)tankTick(d);if(screen.equals("HEIST")&&!over){guardX-=d*14;if(guardX<220)guardX=760;if(Math.abs(guardX-heroX)<25&&Math.abs(heroY-430)<42)over=true;}if(screen.equals("RACE")&&!over)raceTick(d);if(screen.equals("WORLD"))worldTick(d);if(screen.equals("ARCADE"))arcadeTick(d);if(screen.equals("CITY"))cityTick(d);}
     private void bg(Canvas c,int a,int b){p.setShader(new LinearGradient(0,0,0,H,a,b,Shader.TileMode.CLAMP));c.drawRect(0,0,W,H,p);p.setShader(null);}
     private void txt(Canvas c,String s,float x,float y,float z,int color,boolean bold,Paint.Align align){p.setColor(color);p.setTextSize(z);p.setTextAlign(align);p.setTypeface(Typeface.create("sans-serif-rounded",bold?Typeface.BOLD:Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
     private void box(Canvas c,float x,float y,float w,float h,int color,float rad){rr.set(x,y,x+w,y+h);p.setColor(color);p.setStyle(Paint.Style.FILL);p.clearShadowLayer();c.drawRoundRect(rr,rad,rad,p);p.setColor(Color.argb(45,255,255,255));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRoundRect(rr,rad,rad,p);p.setStyle(Paint.Style.FILL);}
@@ -108,6 +115,7 @@ public final class GameView extends View {
     private void mode(Canvas c,float x,float y,float w,float h,Bitmap b,String title,String sub,int col){box(c,x,y,w,h,WHITE,17);art(c,b,x+4,y+4,w-8,h-8);p.setColor(Color.argb(180,8,24,42));c.drawRoundRect(x+4,y+h-57,x+w-4,y+h-4,12,12,p);txt(c,title,x+15,y+h-31,17,WHITE,true,Paint.Align.LEFT);txt(c,sub,x+15,y+h-12,11,WHITE,false,Paint.Align.LEFT);box(c,x+w-42,y+12,30,30,col,15);txt(c,"▶",x+w-27,y+33,14,WHITE,true,Paint.Align.CENTER);}
     private void tile(Canvas c,float x,float y,float w,float h,String title,String sub,String icon,int col){box(c,x,y,w,h,Color.argb(235,255,255,255),16);box(c,x+7,y+8,50,h-16,col,12);txt(c,icon,x+32,y+65,25,WHITE,true,Paint.Align.CENTER);txt(c,title,x+67,y+39,14,DARK,true,Paint.Align.LEFT);txt(c,sub,x+67,y+63,10,Color.rgb(80,99,115),false,Paint.Align.LEFT);}
 
+    private String encodeHouse(){StringBuilder b=new StringBuilder();for(byte v:houseBlocks)b.append((char)(48+Math.max(0,Math.min(6,v))));return b.toString();}
     private float cameraX(){return Math.max(W-WORLD_W,Math.min(0,W/2-worldX));}
     private float cameraY(){return Math.max(H-WORLD_H,Math.min(0,H/2-worldY));}
     private void worldTick(float d){
