@@ -150,7 +150,7 @@ public final class GameView extends View {
         p.setColor(Color.rgb(57,160,200));rr.set(1120,1170,1690,1430);c.drawRoundRect(rr,115,115,p);box(c,910,364,126,24,Color.rgb(147,103,65),5);box(c,1150,1273,105,24,Color.rgb(147,103,65),5);
         road(c,1130,790,880,250);road(c,1130,790,350,300);road(c,1130,790,1580,250);road(c,1130,790,2010,320);road(c,1130,790,650,620);road(c,1130,790,1320,500);
         road(c,1130,790,250,880);road(c,1130,790,880,1110);road(c,1130,790,420,1290);road(c,1130,790,360,1480);road(c,1130,790,1300,1370);
-        road(c,1130,790,1800,1050);road(c,1130,790,2110,1200);road(c,1130,790,1950,680);road(c,1130,790,2210,450);road(c,1130,790,1120,950);road(c,1130,790,1660,1450);road(c,1130,790,1030,570);
+        road(c,1130,790,1800,1050);road(c,1130,790,2110,1200);road(c,1130,790,1950,680);road(c,1130,790,2210,450);road(c,1130,790,1120,950);road(c,1130,790,1660,1450);road(c,1130,790,1030,570);road(c,1130,790,1710,820);road(c,1130,790,1420,1180);road(c,1130,790,2020,930);
         for(int i=0;i<42;i++){float x=40+(i*131)%2320,y=35+(i*223)%1510;if((x<120||x>2280||y<110||y>1490)&&Math.abs(x-worldX)>230)tree(c,x,y,18+(i%3)*4);}
         for(Landmark l:landmarks)landmarkArt(c,l);drawPlayer(c,worldX,worldY);
         if(moving){p.setColor(Color.argb(150,255,255,255));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);c.drawCircle(targetX,targetY,16,p);p.setStyle(Paint.Style.FILL);}c.restore();
@@ -165,7 +165,7 @@ public final class GameView extends View {
         moving=false;switch(l.mode){
             case "GARDEN":startGarden();break;case "FISH":startFish();break;case "STUDIO":startStudio();break;case "TANK":startTank();break;case "HEIST":startHeist();break;case "SURVIVAL":startSurvival();break;case "RACE":startRace();break;case "MINI":screen="MINI";miniScore=0;break;
             case "SPORT":startArcade("SPORT");break;case "PUZZLE":startArcade("PUZZLE");break;case "RHYTHM":startArcade("RHYTHM");break;case "RUNNER":startArcade("RUNNER");break;
-            case "PET":startArcade("PET");break;case "FARM":startArcade("FARM");break;case "MOBA":startArcade("STRATEGY");break;case "TAG":startArcade("TAG");break;case "TYCOON":startArcade("TYCOON");break;
+            case "PET":startArcade("PET");break;case "FARM":startArcade("FARM");break;case "MOBA":startArcade("STRATEGY");break;case "TAG":startArcade("TAG");break;case "TYCOON":startArcade("TYCOON");break;case "CITY":startCity();break;case "BUILD":startBuild("WORLD");break;case "GARAGE":startCity();break;
         }
     }
     private void startArcade(String type){
@@ -393,6 +393,32 @@ public final class GameView extends View {
             }
             persist();invalidate();return;
         }
+        if(screen.equals("CITY")){
+            if(hit(x,y,14,12,50,43)){back();return;}
+            if(hit(x,y,765,82,174,40)){if(hasCar)inCar=!inCar;else notice="Mua xe ở showroom trước nhé";}
+            else if(hit(x,y,765,130,174,40)){if(!cityJob){cityJob=true;jobX=560;jobY=205;notice="Đã nhận chuyến giao hàng. Tìm dấu $!";}else notice="Bạn đang có đơn giao hàng";}
+            else if(hit(x,y,765,178,174,40)){if(!hasCar){if(coins>=300){coins-=300;hasCar=true;carX=280;carY=360;notice="Đã mua xe riêng!";}else notice="Cần 300 xu để mua xe";}else{carX=cityX;carY=cityY;inCar=true;}}
+            else if(hit(x,y,765,226,174,40)){if(hasHouse)startBuild("CITY");else if(coins>=450){coins-=450;hasHouse=true;persist();startBuild("CITY");}else notice="Cần 450 xu để mua nhà";}
+            else if(hit(x,y,765,274,174,40)){if(coins>=100){coins-=100;wood+=8;stone+=4;glass+=2;notice="Đã mua vật liệu xây nhà";persist();}else notice="Cần 100 xu để mua vật liệu";}
+            else if(hit(x,y,840,350,72,40))moveCity(0,-1);
+            else if(hit(x,y,765,397,72,40))moveCity(-1,0);
+            else if(hit(x,y,840,397,72,40))moveCity(0,1);
+            else if(hit(x,y,915,397,40,40))moveCity(1,0);
+            else if(y>110&&y<470&&x<750){if(inCar){carX=x;carY=y;}else{cityX=x;cityY=y;}if(cityJob&&Math.hypot((inCar?carX:cityX)-jobX,(inCar?carY:cityY)-jobY)<58){cityJob=false;earn(180,35);}}
+            persist();invalidate();return;
+        }
+        if(screen.equals("BUILD")){
+            if(hit(x,y,14,12,50,43)){back();return;}
+            if(!hasHouse){
+                if(hit(x,y,350,310,260,55)){if(coins>=450){coins-=450;hasHouse=true;notice="Đã sở hữu lô đất!";persist();}else notice="Bạn cần 450 xu để mua đất";}
+            }else{
+                if(hit(x,y,790,416,150,40))eraseMode=!eraseMode;
+                else if(hit(x,y,790,464,150,40))craftGlass();
+                else if(x>=790&&x<=940&&y>=116&&y<410){int idx=(int)((y-116)/49);if(idx>=0&&idx<6)selectedBlock=idx+1;eraseMode=false;}
+                else if(x>=65&&x<65+14*48&&y>=128&&y<128+8*43){int col=(int)((x-65)/48),row=(int)((y-128)/43);placeHouseBlock(row*14+col);}
+            }
+            persist();invalidate();return;
+        }
         if(hit(x,y,14,12,50,43)){back();return;}
         if(screen.equals("GARDEN")){if(over){if(hit(x,y,300,285,170,65))startGarden();else if(hit(x,y,490,285,170,65))back();return;}if(hit(x,y,22,100,122,88))plantPick="SUN";else if(hit(x,y,22,202,122,88))plantPick="PEA";else if(hit(x,y,22,304,122,88))plantPick="NUT";else if(hit(x,y,22,410,122,38))paused=!paused;else if(x>=170&&x<746&&y>=111&&y<421){int col=(int)((x-170)/64),row=(int)((y-111)/62),cost=plantPick.equals("SUN")?50:plantPick.equals("PEA")?100:75;if(garden[row][col]==null&&sun>=cost){sun-=cost;garden[row][col]=new Plant(plantPick);}}}
         else if(screen.equals("FISH")){if(over){if(hit(x,y,300,285,170,65))startFish();else if(hit(x,y,490,285,170,65))back();return;}if(hit(x,y,750,405,175,52)&&!casting&&!hooked){casting=true;fishWait=0;}else if(hit(x,y,750,405,175,52)&&hooked){reeling=true;fishPct=Math.min(100,fishPct+10);}else if(hit(x,y,750,468,175,40)){character=(character+1)%3;persist();}}
@@ -448,7 +474,7 @@ public final class GameView extends View {
         else if(screen.equals("SETTINGS")){if(hit(x,y,350,315,260,46))back();}
         if(xp>=level*100){xp-=level*100;level++;gems+=2;}persist();invalidate();}
     private void addCode(String s){if(code.size()<8)code.add(s);else notice="Tối đa 8 khối trong bản này";}
-    private void back(){screen="WORLD";over=false;paused=false;studioRun=false;reeling=false;persist();invalidate();}
+    private void back(){if("BUILD".equals(screen))screen=buildReturn;else screen="WORLD";over=false;paused=false;studioRun=false;reeling=false;persist();invalidate();}
 
     public boolean backToHub(){
         if ("WORLD".equals(screen)) return false;
