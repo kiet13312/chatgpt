@@ -106,6 +106,101 @@ public final class GameView extends View {
         box(c,125,454,820,65,Color.argb(220,20,42,66),15);txt(c,"Đăng nhập mỗi ngày",148,481,16,WHITE,true,Paint.Align.LEFT);txt(c,notice,148,503,12,Color.rgb(213,228,245),false,Paint.Align.LEFT);btn(c,giftClaimed?"ĐÃ NHẬN":"🎁 NHẬN QUÀ",756,465,170,43,GOLD);}
     private void mode(Canvas c,float x,float y,float w,float h,Bitmap b,String title,String sub,int col){box(c,x,y,w,h,WHITE,17);art(c,b,x+4,y+4,w-8,h-8);p.setColor(Color.argb(180,8,24,42));c.drawRoundRect(x+4,y+h-57,x+w-4,y+h-4,12,12,p);txt(c,title,x+15,y+h-31,17,WHITE,true,Paint.Align.LEFT);txt(c,sub,x+15,y+h-12,11,WHITE,false,Paint.Align.LEFT);box(c,x+w-42,y+12,30,30,col,15);txt(c,"▶",x+w-27,y+33,14,WHITE,true,Paint.Align.CENTER);}
     private void tile(Canvas c,float x,float y,float w,float h,String title,String sub,String icon,int col){box(c,x,y,w,h,Color.argb(235,255,255,255),16);box(c,x+7,y+8,50,h-16,col,12);txt(c,icon,x+32,y+65,25,WHITE,true,Paint.Align.CENTER);txt(c,title,x+67,y+39,14,DARK,true,Paint.Align.LEFT);txt(c,sub,x+67,y+63,10,Color.rgb(80,99,115),false,Paint.Align.LEFT);}
+
+    private float cameraX(){return Math.max(W-WORLD_W,Math.min(0,W/2-worldX));}
+    private float cameraY(){return Math.max(H-WORLD_H,Math.min(0,H/2-worldY));}
+    private void worldTick(float d){
+        if(moving){float dx=targetX-worldX,dy=targetY-worldY,dist=(float)Math.hypot(dx,dy);if(dist<7)moving=false;else{float step=Math.min(dist,215*d);worldX+=dx/dist*step;worldY+=dy/dist*step;}}
+        worldX=Math.max(50,Math.min(WORLD_W-50,worldX));worldY=Math.max(80,Math.min(WORLD_H-50,worldY));
+        nearby=-1;for(int i=0;i<landmarks.length;i++)if(Math.hypot(worldX-landmarks[i].x,worldY-landmarks[i].y)<115){nearby=i;break;}
+    }
+    private void tree(Canvas c,float x,float y,float r){
+        p.setColor(Color.argb(65,30,65,40));c.drawCircle(x+5,y+7,r+2,p);p.setColor(Color.rgb(112,83,54));c.drawRect(x-4,y,x+4,y+r+15,p);
+        p.setColor(Color.rgb(47,132,69));c.drawCircle(x,y,r,p);p.setColor(Color.rgb(74,164,79));c.drawCircle(x-r*.32f,y-r*.28f,r*.58f,p);p.setColor(Color.rgb(92,183,82));c.drawCircle(x+r*.30f,y-r*.23f,r*.48f,p);
+    }
+    private void road(Canvas c,float x1,float y1,float x2,float y2){
+        p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeWidth(76);p.setColor(Color.rgb(192,174,132));c.drawLine(x1,y1,x2,y2,p);
+        p.setStrokeWidth(5);p.setColor(Color.rgb(231,218,180));c.drawLine(x1,y1,x2,y2,p);p.setStyle(Paint.Style.FILL);
+    }
+    private void landmarkArt(Canvas c,Landmark l){
+        float x=l.x,y=l.y;p.setColor(Color.argb(45,20,45,30));c.drawOval(x-62,y+45,x+62,y+64,p);box(c,x-55,y-47,110,92,l.color,14);
+        p.setColor(Color.rgb(244,231,190));c.drawRect(x-37,y-23,x+37,y+35,p);Path roof=new Path();roof.moveTo(x-47,y-22);roof.lineTo(x,y-59);roof.lineTo(x+47,y-22);roof.close();p.setColor(Color.rgb(172,78,63));c.drawPath(roof,p);
+        p.setColor(Color.rgb(105,73,51));c.drawRect(x-9,y+9,x+9,y+35,p);p.setColor(Color.rgb(123,192,221));c.drawRect(x-30,y-12,x-14,y+4,p);c.drawRect(x+14,y-12,x+30,y+4,p);
+        box(c,x-78,y+49,156,24,Color.argb(220,19,35,54),8);txt(c,l.name,x,y+66,10,WHITE,true,Paint.Align.CENTER);
+    }
+    private void drawPlayer(Canvas c,float x,float y){
+        p.setColor(Color.argb(65,20,35,35));c.drawOval(x-18,y+20,x+18,y+28,p);p.setColor(Color.rgb(37,83,151));rr.set(x-15,y-3,x+15,y+26);c.drawRoundRect(rr,8,8,p);
+        p.setColor(Color.rgb(245,193,143));c.drawCircle(x,y-17,13,p);p.setColor(Color.rgb(46,48,65));c.drawArc(x-14,y-31,x+14,y-8,180,180,false,p);
+        p.setColor(WHITE);c.drawCircle(x-4,y-18,2.5f,p);c.drawCircle(x+4,y-18,2.5f,p);
+    }
+    private void worldScreen(Canvas c){
+        c.drawColor(Color.rgb(115,184,106));float camX=cameraX(),camY=cameraY();c.save();c.translate(camX,camY);
+        p.setColor(Color.rgb(116,183,102));c.drawRect(0,0,WORLD_W,WORLD_H,p);
+        for(int i=0;i<24;i++){float x=(i*317)%WORLD_W+30,y=(i*197)%WORLD_H+30;p.setColor(i%2==0?Color.rgb(124,190,105):Color.rgb(107,175,98));c.drawOval(x-78,y-35,x+78,y+35,p);}
+        p.setColor(Color.rgb(66,174,211));c.drawOval(690,55,1265,390,p);p.setColor(Color.rgb(116,211,220));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(8);c.drawOval(720,83,1235,360,p);p.setStyle(Paint.Style.FILL);
+        p.setColor(Color.rgb(57,160,200));rr.set(1120,1170,1690,1430);c.drawRoundRect(rr,115,115,p);box(c,910,364,126,24,Color.rgb(147,103,65),5);box(c,1150,1273,105,24,Color.rgb(147,103,65),5);
+        road(c,1130,790,880,250);road(c,1130,790,350,300);road(c,1130,790,1580,250);road(c,1130,790,2010,320);road(c,1130,790,650,620);road(c,1130,790,1320,500);
+        road(c,1130,790,250,880);road(c,1130,790,880,1110);road(c,1130,790,420,1290);road(c,1130,790,360,1480);road(c,1130,790,1300,1370);
+        road(c,1130,790,1800,1050);road(c,1130,790,2110,1200);road(c,1130,790,1950,680);road(c,1130,790,2210,450);road(c,1130,790,1120,950);road(c,1130,790,1660,1450);road(c,1130,790,1030,570);
+        for(int i=0;i<42;i++){float x=40+(i*131)%2320,y=35+(i*223)%1510;if((x<120||x>2280||y<110||y>1490)&&Math.abs(x-worldX)>230)tree(c,x,y,18+(i%3)*4);}
+        for(Landmark l:landmarks)landmarkArt(c,l);drawPlayer(c,worldX,worldY);
+        if(moving){p.setColor(Color.argb(150,255,255,255));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);c.drawCircle(targetX,targetY,16,p);p.setStyle(Paint.Style.FILL);}c.restore();
+        box(c,0,0,W,62,Color.argb(238,17,34,56),0);box(c,13,9,210,44,Color.rgb(36,58,83),12);txt(c,"KIỆT  •  Lv."+level,26,29,15,WHITE,true,Paint.Align.LEFT);txt(c,xp+"/"+(level*100)+" XP",26,47,10,Color.rgb(204,222,242),false,Paint.Align.LEFT);
+        txt(c,"🪙 "+coins,300,36,18,GOLD,true,Paint.Align.CENTER);txt(c,"💎 "+gems,420,36,18,Color.rgb(121,223,255),true,Paint.Align.CENTER);txt(c,"⚡ "+energy,530,36,16,WHITE,true,Paint.Align.CENTER);
+        btn(c,"SHOP",620,10,82,41,PURPLE);btn(c,"KHO",710,10,65,41,BLUE);btn(c,"NHIỆM VỤ",783,10,105,41,GREEN);btn(c,"⚙",895,10,52,41,Color.rgb(85,105,127));
+        box(c,12,476,540,50,Color.argb(205,19,37,56),12);txt(c,"CHẠM BẢN ĐỒ ĐỂ ĐI BỘ • KHÁM PHÁ CÁC KHU VỰC",28,506,13,WHITE,true,Paint.Align.LEFT);
+        if(nearby>=0){Landmark l=landmarks[nearby];box(c,568,470,377,58,Color.argb(235,17,34,56),13);txt(c,l.name+"  •  "+l.subtitle,584,493,12,WHITE,true,Paint.Align.LEFT);btn(c,"VÀO KHU",825,478,108,40,l.color);}
+        else{box(c,700,476,245,50,Color.argb(175,19,37,56),12);txt(c,"Đi đến tòa nhà để tương tác",822,506,12,WHITE,true,Paint.Align.CENTER);}
+    }
+    private void enterLandmark(Landmark l){
+        moving=false;switch(l.mode){
+            case "GARDEN":startGarden();break;case "FISH":startFish();break;case "STUDIO":startStudio();break;case "TANK":startTank();break;case "HEIST":startHeist();break;case "SURVIVAL":startSurvival();break;case "RACE":startRace();break;case "MINI":screen="MINI";miniScore=0;break;
+            case "SPORT":startArcade("SPORT");break;case "PUZZLE":startArcade("PUZZLE");break;case "RHYTHM":startArcade("RHYTHM");break;case "RUNNER":startArcade("RUNNER");break;
+            case "PET":startArcade("PET");break;case "FARM":startArcade("FARM");break;case "MOBA":startArcade("STRATEGY");break;case "TAG":startArcade("TAG");break;case "TYCOON":startArcade("TYCOON");break;
+        }
+    }
+    private void startArcade(String type){
+        screen="ARCADE";arcadeType=type;arcadeScore=0;arcadeRound=0;misses=0;over=false;t=0;noteY=-35;selectedTile=-1;raceLane=1;heroX=480;heroY=370;tagEnemyX=760;tagEnemyY=150;Arrays.fill(farmCrop,0);
+        if(type.equals("PUZZLE")){for(int i=0;i<16;i++)puzzleTiles[i]=i/4;for(int i=15;i>0;i--){int j=rng.nextInt(i+1),v=puzzleTiles[i];puzzleTiles[i]=puzzleTiles[j];puzzleTiles[j]=v;}}
+        if(type.equals("SPORT"))keeperLane=rng.nextInt(3);
+    }
+    private void arcadeTick(float d){
+        t+=d;
+        if(arcadeType.equals("RUNNER")){spawn-=d;if(spawn<=0){foes.add(new Foe(330+rng.nextInt(3)*150,-30,170));spawn=.85f;}Iterator<Foe> it=foes.iterator();while(it.hasNext()){Foe f=it.next();f.y+=f.s*d;if(f.y>500){it.remove();arcadeScore++;}else if(Math.abs(f.x-(330+raceLane*150))<35&&f.y>390&&f.y<465)over=true;}}
+        else if(arcadeType.equals("RHYTHM")){noteY+=210*d;if(noteY>465){misses++;noteY=-30;arcadeRound++;if(misses>=4)over=true;}}
+        else if(arcadeType.equals("TAG")){float dx=heroX-tagEnemyX,dy=heroY-tagEnemyY,dist=(float)Math.hypot(dx,dy);if(dist>1){tagEnemyX+=dx/dist*70*d;tagEnemyY+=dy/dist*70*d;}if(dist<30)over=true;}
+        else if(arcadeType.equals("FARM")){for(int i=0;i<farmCrop.length;i++)if(farmCrop[i]>0&&farmCrop[i]<8)farmCrop[i]+=d;}
+        else if(arcadeType.equals("PET"))petHunger=Math.min(100,petHunger+(int)(d*.8f));
+        else if(arcadeType.equals("STRATEGY")){if(arcadeRound>0&&t>.9f){arcadeScore=Math.min(100,arcadeScore+1);t=0;if(arcadeScore>=100)over=true;}}
+        else if(arcadeType.equals("TYCOON")){if(t>5){coins+=2;t=0;persist();}}
+    }
+    private void arcadeScreen(Canvas c){
+        bg(c,Color.rgb(88,157,193),Color.rgb(63,102,119));header(c,arcadeTitle());if(over){result(c,"HOÀN THÀNH!","Điểm: "+arcadeScore+"  •  Thử lại hoặc quay về bản đồ",arcadeScore>0);return;}
+        switch(arcadeType){
+            case "PUZZLE":
+                txt(c,"GHÉP CẶP CÙNG MÀU • CHỌN 2 Ô GIỐNG NHAU",480,108,17,WHITE,true,Paint.Align.CENTER);
+                for(int i=0;i<16;i++){float x=285+(i%4)*100,y=140+(i/4)*82;int v=puzzleTiles[i];int[] colors={BLUE,GOLD,GREEN,PURPLE};box(c,x,y,88,70,v<0?Color.rgb(49,66,80):colors[v],13);if(v>=0)txt(c,"◆",x+44,y+48,30,WHITE,true,Paint.Align.CENTER);if(selectedTile==i){p.setColor(WHITE);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(4);rr.set(x,y,x+88,y+70);c.drawRoundRect(rr,13,13,p);p.setStyle(Paint.Style.FILL);}}
+                txt(c,"Cặp đã ghép: "+arcadeScore/20+" / 8",480,500,16,GOLD,true,Paint.Align.CENTER);break;
+            case "RUNNER":
+                txt(c,"NEO LÀN • TRÁNH CHƯỚNG NGẠI",480,110,18,WHITE,true,Paint.Align.CENTER);box(c,250,130,460,340,Color.rgb(48,58,69),18);for(int i=1;i<3;i++)c.drawLine(250+i*153,130,250+i*153,470,p);p.setColor(BLUE);rr.set(330+raceLane*150-22,405,330+raceLane*150+22,455);c.drawRoundRect(rr,12,12,p);for(Foe f:foes){p.setColor(RED);c.drawCircle(f.x,f.y,18,p);}btn(c,"◀",300,475,100,45,BLUE);btn(c,"▶",560,475,100,45,BLUE);txt(c,"Điểm "+arcadeScore,480,155,14,GOLD,true,Paint.Align.CENTER);break;
+            case "RHYTHM":
+                txt(c,"NHẤN NHỊP KHI NỐT NHẠC ĐẾN VẠCH",480,110,18,WHITE,true,Paint.Align.CENTER);box(c,190,155,580,300,Color.rgb(44,65,89),20);p.setColor(Color.rgb(245,221,135));p.setStrokeWidth(5);c.drawLine(230,365,730,365,p);p.setColor(PURPLE);c.drawCircle(480,noteY,26,p);btn(c,"NHẤN NHỊP!",360,430,240,58,GREEN);txt(c,"Chuỗi đúng: "+arcadeScore+"  •  Lỡ nhịp: "+misses+"/4",480,510,15,WHITE,true,Paint.Align.CENTER);break;
+            case "PET":
+                txt(c,"PET VILLAGE • CHĂM BẠN THÚ CƯNG",480,120,20,WHITE,true,Paint.Align.CENTER);box(c,330,155,300,245,Color.rgb(243,222,179),25);p.setColor(Color.rgb(238,180,137));c.drawCircle(480,270,82,p);p.setColor(Color.rgb(102,74,63));c.drawCircle(448,255,10,p);c.drawCircle(512,255,10,p);p.setColor(WHITE);c.drawOval(464,283,496,303,p);txt(c,"Đói "+petHunger+"%   Vui "+petHappy+"%   Sạch "+petClean+"%",480,435,16,WHITE,true,Paint.Align.CENTER);btn(c,"CHO ĂN",210,465,150,48,GOLD);btn(c,"CHƠI",405,465,150,48,GREEN);btn(c,"TẮM",600,465,150,48,BLUE);break;
+            case "SPORT":
+                txt(c,"SÚT BÓNG • CHỌN 1 TRONG 3 GÓC KHUNG THÀNH",480,110,17,WHITE,true,Paint.Align.CENTER);box(c,255,165,450,265,Color.rgb(52,133,81),18);box(c,365,200,230,160,WHITE,8);box(c,375,210,210,140,Color.rgb(78,150,211),4);for(int i=0;i<3;i++){box(c,390+i*65,245,55,82,i==keeperLane?RED:Color.argb(45,255,255,255),4);txt(c,""+(i+1),417+i*65,294,22,WHITE,true,Paint.Align.CENTER);}btn(c,"GÓC TRÁI",220,455,150,48,BLUE);btn(c,"Ở GIỮA",405,455,150,48,GREEN);btn(c,"GÓC PHẢI",590,455,150,48,PURPLE);txt(c,"Bàn thắng: "+arcadeScore+" / 5",480,145,16,GOLD,true,Paint.Align.CENTER);break;
+            case "FARM":
+                txt(c,"NÔNG TRẠI • GIEO HẠT VÀ THU HOẠCH",480,110,19,WHITE,true,Paint.Align.CENTER);for(int i=0;i<6;i++){float x=270+(i%3)*145,y=165+(i/3)*135;box(c,x,y,120,100,Color.rgb(135,90,54),12);if(farmCrop[i]==0)txt(c,"＋",x+60,y+62,34,WHITE,true,Paint.Align.CENTER);else txt(c,farmCrop[i]>=8?"🌾":"🌱",x+60,y+62,30,GOLD,true,Paint.Align.CENTER);}txt(c,"Gieo ô trống • Thu hoạch khi cây trưởng thành",480,480,15,WHITE,true,Paint.Align.CENTER);break;
+            case "STRATEGY":
+                txt(c,"CHIẾN THUẬT 3 ĐƯỜNG • TĂNG SỨC MẠNH ĐỘI",480,110,18,WHITE,true,Paint.Align.CENTER);for(int i=0;i<3;i++){box(c,180,155+i*92,600,72,Color.rgb(56,87,116),12);txt(c,"ĐƯỜNG "+(i+1),220,198+i*92,16,WHITE,true,Paint.Align.LEFT);box(c,350,180+i*92,Math.max(8,arcadeScore*3.9f),22,GREEN,10);btn(c,"TĂNG ĐỘI",650,169+i*92,110,42,PURPLE);}txt(c,"Tiến độ chung "+arcadeScore+"%",480,460,15,GOLD,true,Paint.Align.CENTER);break;
+            case "TAG":
+                txt(c,"COLOR TAG • THU THẬP 5 SAO, TRÁNH BỊ CHẠM",480,110,18,WHITE,true,Paint.Align.CENTER);box(c,160,140,640,320,Color.rgb(70,129,98),20);p.setColor(GOLD);for(int i=0;i<5-arcadeScore;i++)c.drawCircle(240+(i*107)%510,190+(i*61)%205,10,p);p.setColor(BLUE);c.drawCircle(heroX,heroY,18,p);p.setColor(RED);c.drawCircle(tagEnemyX,tagEnemyY,20,p);btn(c,"◀",230,475,100,42,BLUE);btn(c,"▲",340,475,100,42,BLUE);btn(c,"▼",450,475,100,42,BLUE);btn(c,"▶",560,475,100,42,BLUE);txt(c,"Sao "+arcadeScore+"/5",480,140,15,GOLD,true,Paint.Align.CENTER);break;
+            case "TYCOON":
+                txt(c,"TOWN TYCOON • XÂY CỬA HÀNG VÀ TĂNG THU NHẬP",480,115,18,WHITE,true,Paint.Align.CENTER);box(c,300,165,360,230,Color.rgb(232,207,154),18);box(c,375,235,210,160,Color.rgb(245,230,192),8);Path roof=new Path();roof.moveTo(350,238);roof.lineTo(480,158);roof.lineTo(610,238);roof.close();p.setColor(RED);c.drawPath(roof,p);txt(c,"SHOP",480,300,28,DARK,true,Paint.Align.CENTER);txt(c,"Xu: "+coins,480,430,18,GOLD,true,Paint.Align.CENTER);btn(c,"THU +10",300,455,150,48,GREEN);btn(c,"NÂNG CẤP 50",510,455,170,48,PURPLE);break;
+        }
+    }
+    private String arcadeTitle(){switch(arcadeType){case "PUZZLE":return "PUZZLE PARK";case "RUNNER":return "RUNNER TRAIL";case "RHYTHM":return "NHẠC HỘI";case "PET":return "PET VILLAGE";case "SPORT":return "SÂN THỂ THAO";case "FARM":return "FARM & TYCOON";case "STRATEGY":return "STRATEGY CASTLE";case "TAG":return "COLOR TAG ARENA";default:return "TOWN TYCOON";}}
+
     private void startGarden(){screen="GARDEN";sun=200;kills=0;spawn=1.2f;sunTick=4;paused=false;over=false;t=0;zombies.clear();bullets.clear();for(int i=0;i<5;i++)Arrays.fill(garden[i],null);}
     private void gardenTick(float d){t+=d;spawn-=d;sunTick-=d;if(sunTick<=0){sun+=25;sunTick=6;}if(spawn<=0&&zombies.size()<12&&kills<15){zombies.add(new Zombie(rng.nextInt(5)));spawn=Math.max(2.2f,5.8f-gardenLevel*.2f);}for(int row=0;row<5;row++)for(int col=0;col<9;col++){Plant a=garden[row][col];if(a==null)continue;a.cd-=d;if(a.type.equals("SUN")&&a.cd<=0){sun+=25;a.cd=8;}if(a.type.equals("PEA")&&a.cd<=0){boolean has=false;for(Zombie z:zombies)if(z.row==row&&z.x>160)has=true;if(has){bullets.add(new Bullet(row,180+col*64));a.cd=1.35f;}}}for(Bullet b:bullets)b.x+=260*d;Iterator<Bullet> bi=bullets.iterator();while(bi.hasNext()){Bullet b=bi.next();boolean hit=false;for(Zombie z:zombies)if(z.row==b.row&&Math.abs(z.x-b.x)<20){z.hp-=35;hit=true;break;}if(hit||b.x>800)bi.remove();}Iterator<Zombie> zi=zombies.iterator();while(zi.hasNext()){Zombie z=zi.next();int col=Math.max(0,Math.min(8,(int)((z.x-180)/64)));Plant a=garden[z.row][col];if(a!=null&&z.x<200+col*64+34){z.bite+=d;if(z.bite>.7f){a.hp-=15;z.bite=0;if(a.hp<=0)garden[z.row][col]=null;}}else z.x-=24*d;if(z.hp<=0){zi.remove();kills++;coins+=6;}else if(z.x<150){over=true;paused=true;}}if(kills>=15&&!over){over=true;gardenLevel=Math.min(9,gardenLevel+1);energy=Math.min(100,energy+5);earn(180,45);}}
     private void gardenScreen(Canvas c){art(c,gardenArt,0,0,W,H);box(c,0,0,W,68,Color.argb(180,13,34,52),0);btn(c,"‹",14,12,50,43,BLUE);txt(c,"GARDEN DEFENSE  •  MÀN "+gardenLevel,82,41,21,WHITE,true,Paint.Align.LEFT);txt(c,"☀ "+sun+"     Hạ "+kills+"/15",790,41,17,GOLD,true,Paint.Align.CENTER);box(c,12,82,142,360,Color.argb(220,20,43,66),15);String[] n={"SUN","PEA","NUT"};int[] cost={50,100,75},col={GOLD,GREEN,Color.rgb(155,108,69)};for(int i=0;i<3;i++){int yy=100+i*102;box(c,22,yy,122,88,plantPick.equals(n[i])?Color.rgb(255,235,176):Color.rgb(58,78,96),12);p.setColor(col[i]);c.drawCircle(54,yy+35,21,p);txt(c,n[i],89,yy+34,14,WHITE,true,Paint.Align.LEFT);txt(c,cost[i]+" ☀",89,yy+57,12,WHITE,false,Paint.Align.LEFT);}btn(c,paused?"TIẾP TỤC":"TẠM DỪNG",22,410,122,38,Color.rgb(82,103,123));for(int row=0;row<5;row++)for(int coln=0;coln<9;coln++){float x=170+coln*64,y=111+row*62;box(c,x,y,62,59,Color.argb(75,170,230,122),7);Plant a=garden[row][coln];if(a!=null){p.setColor(a.type.equals("SUN")?GOLD:a.type.equals("PEA")?GREEN:Color.rgb(155,109,69));c.drawCircle(x+31,y+30,22,p);txt(c,a.type.equals("SUN")?"☀":a.type.equals("PEA")?"●":"⬟",x+31,y+38,24,WHITE,true,Paint.Align.CENTER);}}for(Bullet b:bullets){p.setColor(Color.rgb(184,255,104));c.drawCircle(b.x,142+b.row*62,7,p);}for(Zombie z:zombies){p.setColor(Color.rgb(95,157,102));c.drawCircle(z.x,142+z.row*62,19,p);p.setColor(WHITE);c.drawCircle(z.x-7,136+z.row*62,4,p);c.drawCircle(z.x+7,136+z.row*62,4,p);}if(over)result(c,kills>=15?"CHIẾN THẮNG":"VƯỜN BỊ TRÀN","Hạ được "+kills+" quái",kills>=15);}
