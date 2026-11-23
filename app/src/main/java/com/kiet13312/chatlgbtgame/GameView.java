@@ -35,6 +35,11 @@ public final class GameView extends View {
     private float cityClock,cityX=280,cityY=360,carX=280,carY=360,jobX=720,jobY=175;
     private String buildReturn="WORLD";
     private int selectedBlock=1;
+    private float touchStartX,touchStartY;
+    private int feedIndex;
+    private boolean commentsOpen;
+    private final boolean[] feedLiked=new boolean[5];
+    private final int[] feedLikes={128,94,231,178,86};
     private final byte[] houseBlocks=new byte[112];
     private final Plant[][] garden=new Plant[5][9];
     private final boolean[] blocksPlaced=new boolean[40];
@@ -86,7 +91,7 @@ public final class GameView extends View {
     private static final class Foe {float x,y,s;Foe(float a,float b,float c){x=a;y=b;s=c;} }
 
     public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);save=c.getSharedPreferences("chat_lgbt_game",Context.MODE_PRIVATE);
-        coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);wood=save.getInt("wood",32);stone=save.getInt("stone",24);glass=save.getInt("glass",8);hasCar=save.getBoolean("hasCar",false);hasHouse=save.getBoolean("hasHouse",false);cityX=save.getFloat("cityX",280);cityY=save.getFloat("cityY",360);carX=save.getFloat("carX",280);carY=save.getFloat("carY",360);
+        coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);wood=save.getInt("wood",32);stone=save.getInt("stone",24);glass=save.getInt("glass",8);hasCar=save.getBoolean("hasCar",false);hasHouse=save.getBoolean("hasHouse",false);cityX=save.getFloat("cityX",280);cityY=save.getFloat("cityY",360);carX=save.getFloat("carX",280);carY=save.getFloat("carY",360);feedIndex=Math.max(0,Math.min(4,save.getInt("feedIndex",0)));for(int i=0;i<feedLiked.length;i++){feedLiked[i]=save.getBoolean("feedLiked"+i,false);feedLikes[i]=save.getInt("feedLikes"+i,feedLikes[i]);}
         gardenArt=vector(R.drawable.garden_art);fishArt=vector(R.drawable.fishing_art);studioArt=vector(R.drawable.studio_art);
         worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;String savedHouse=save.getString("houseBlocks","");for(int i=0;i<Math.min(houseBlocks.length,savedHouse.length());i++)houseBlocks[i]=(byte)Math.max(0,savedHouse.charAt(i)-48);for(byte v:houseBlocks)if(v>0)blocks++;
         for(int i=0;i<puzzleTiles.length;i++)puzzleTiles[i]=i/4;
@@ -95,7 +100,7 @@ public final class GameView extends View {
     private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).putFloat("worldX",worldX).putFloat("worldY",worldY).putInt("wood",wood).putInt("stone",stone).putInt("glass",glass).putBoolean("hasCar",hasCar).putBoolean("hasHouse",hasHouse).putFloat("cityX",cityX).putFloat("cityY",cityY).putFloat("carX",carX).putFloat("carY",carY).putString("houseBlocks",encodeHouse()).apply();}
 
     @Override protected void onDraw(Canvas c){super.onDraw(c);scale=Math.min(getWidth()/W,getHeight()/H);ox=(getWidth()-W*scale)/2;oy=(getHeight()-H*scale)/2;c.save();c.translate(ox,oy);c.scale(scale,scale);long now=System.nanoTime();float dt=last==0?.016f:Math.min(.05f,(now-last)/1e9f);last=now;tick(dt);
-        switch(screen){case "HUB":case "WORLD":worldScreen(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "ARCADE":arcadeScreen(c);break;case "CITY":cityScreen(c);break;case "BUILD":buildScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
+        switch(screen){case "HUB":case "WORLD":worldScreen(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "ARCADE":arcadeScreen(c);break;case "CITY":cityScreen(c);break;case "BUILD":buildScreen(c);break;case "ONLINE":onlineScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
     private void tick(float d){if(screen.equals("GARDEN")&&!paused&&!over)gardenTick(d);if(screen.equals("FISH")&&!over)fishTick(d);if(screen.equals("STUDIO")&&studioRun){studioX+=d*(35+variable*5);if(studioX>915)studioX=705;}if(screen.equals("TANK")&&!over)tankTick(d);if(screen.equals("HEIST")&&!over){guardX-=d*14;if(guardX<220)guardX=760;if(Math.abs(guardX-heroX)<25&&Math.abs(heroY-430)<42)over=true;}if(screen.equals("RACE")&&!over)raceTick(d);if(screen.equals("WORLD"))worldTick(d);if(screen.equals("ARCADE"))arcadeTick(d);if(screen.equals("CITY"))cityTick(d);}
     private void bg(Canvas c,int a,int b){p.setShader(new LinearGradient(0,0,0,H,a,b,Shader.TileMode.CLAMP));c.drawRect(0,0,W,H,p);p.setShader(null);}
     private void txt(Canvas c,String s,float x,float y,float z,int color,boolean bold,Paint.Align align){p.setColor(color);p.setTextSize(z);p.setTextAlign(align);p.setTypeface(Typeface.create("sans-serif-rounded",bold?Typeface.BOLD:Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
@@ -155,8 +160,8 @@ public final class GameView extends View {
         for(Landmark l:landmarks)landmarkArt(c,l);drawPlayer(c,worldX,worldY);
         if(moving){p.setColor(Color.argb(150,255,255,255));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(3);c.drawCircle(targetX,targetY,16,p);p.setStyle(Paint.Style.FILL);}c.restore();
         box(c,0,0,W,62,Color.argb(238,17,34,56),0);box(c,13,9,210,44,Color.rgb(36,58,83),12);txt(c,"KIỆT  •  Lv."+level,26,29,15,WHITE,true,Paint.Align.LEFT);txt(c,xp+"/"+(level*100)+" XP",26,47,10,Color.rgb(204,222,242),false,Paint.Align.LEFT);
-        txt(c,"🪙 "+coins,300,36,18,GOLD,true,Paint.Align.CENTER);txt(c,"💎 "+gems,420,36,18,Color.rgb(121,223,255),true,Paint.Align.CENTER);txt(c,"⚡ "+energy,530,36,16,WHITE,true,Paint.Align.CENTER);
-        btn(c,"SHOP",620,10,82,41,PURPLE);btn(c,"KHO",710,10,65,41,BLUE);btn(c,"NHIỆM VỤ",783,10,105,41,GREEN);btn(c,"⚙",895,10,52,41,Color.rgb(85,105,127));
+        txt(c,"🪙 "+coins,265,36,18,GOLD,true,Paint.Align.CENTER);txt(c,"💎 "+gems,385,36,18,Color.rgb(121,223,255),true,Paint.Align.CENTER);txt(c,"⚡ "+energy,490,36,16,WHITE,true,Paint.Align.CENTER);
+        btn(c,"ONLINE",550,10,72,41,RED);btn(c,"SHOP",630,10,70,41,PURPLE);btn(c,"KHO",706,10,58,41,BLUE);btn(c,"NHIỆM VỤ",770,10,105,41,GREEN);btn(c,"⚙",883,10,62,41,Color.rgb(85,105,127));
         box(c,12,476,540,50,Color.argb(205,19,37,56),12);txt(c,"CHẠM BẢN ĐỒ ĐỂ ĐI BỘ • KHÁM PHÁ CÁC KHU VỰC",28,506,13,WHITE,true,Paint.Align.LEFT);
         if(nearby>=0){Landmark l=landmarks[nearby];box(c,568,470,377,58,Color.argb(235,17,34,56),13);txt(c,l.name+"  •  "+l.subtitle,584,493,12,WHITE,true,Paint.Align.LEFT);btn(c,"VÀO KHU",825,478,108,40,l.color);}
         else{box(c,700,476,245,50,Color.argb(175,19,37,56),12);txt(c,"Đi đến tòa nhà để tương tác",822,506,12,WHITE,true,Paint.Align.CENTER);}
@@ -306,6 +311,64 @@ public final class GameView extends View {
         if(cityJob&&Math.hypot((inCar?carX:cityX)-jobX,(inCar?carY:cityY)-jobY)<58){cityJob=false;earn(180,35);notice="Giao hàng thành công! +180 xu";}
         persist();
     }
+
+    private void startOnline(){screen="ONLINE";commentsOpen=false;feedIndex=Math.max(0,Math.min(4,feedIndex));}
+    private void changeFeed(int step){feedIndex=(feedIndex+step+5)%5;commentsOpen=false;save.edit().putInt("feedIndex",feedIndex).apply();}
+    private void feedArt(Canvas c,int index,float x,float y,float w,float h){
+        c.save();Path clip=new Path();clip.addRoundRect(new RectF(x,y,x+w,y+h),18,18,Path.Direction.CW);c.clipPath(clip);
+        int top=index==0?Color.rgb(49,91,145):index==1?Color.rgb(94,183,218):index==2?Color.rgb(130,197,139):index==3?Color.rgb(105,155,196):Color.rgb(57,65,110);
+        int bottom=index==0?Color.rgb(246,151,116):index==1?Color.rgb(25,112,145):index==2?Color.rgb(54,139,75):index==3?Color.rgb(108,166,111):Color.rgb(145,83,173);
+        p.setShader(new LinearGradient(x,y,x+w,y+h,top,bottom,Shader.TileMode.CLAMP));c.drawRect(x,y,x+w,y+h,p);p.setShader(null);
+        if(index==0){
+            p.setColor(Color.rgb(255,213,133));c.drawCircle(x+w*.75f,y+h*.18f,30,p);
+            int[] heights={.42f,.30f,.50f,.36f,.60f,.43f,.54f};
+            for(int i=0;i<heights.length;i++){float bx=x+12+i*49,by=y+h*(.68f-heights[i]*.55f);box(c,bx,by,39,y+h*.75f-by,Color.rgb(37+i*3,55+i*2,83+i*2),4);for(int r=0;r<3;r++)for(int q=0;q<2;q++){p.setColor(Color.rgb(255,210,120));c.drawRect(bx+7+q*17,by+10+r*16,bx+13+q*17,by+17+r*16,p);}}
+            p.setColor(Color.rgb(55,61,69));c.drawRect(x,y+h*.77f,x+w,y+h,p);p.setColor(Color.rgb(245,207,115));for(int i=0;i<5;i++)c.drawRect(x+25+i*75,y+h*.875f,x+55+i*75,y+h*.89f,p);
+            p.setColor(Color.rgb(225,79,70));rr.set(x+w*.42f,y+h*.74f,x+w*.72f,y+h*.84f);c.drawRoundRect(rr,12,12,p);p.setColor(Color.rgb(41,49,61));c.drawCircle(x+w*.48f,y+h*.845f,10,p);c.drawCircle(x+w*.66f,y+h*.845f,10,p);
+        }else if(index==1){
+            p.setColor(Color.rgb(55,143,125));Path hill=new Path();hill.moveTo(x,y+h*.46f);hill.cubicTo(x+w*.25f,y+h*.22f,x+w*.38f,y+h*.44f,x+w*.58f,y+h*.35f);hill.cubicTo(x+w*.78f,y+h*.23f,x+w*.9f,y+h*.4f,x+w,y+h*.3f);hill.lineTo(x+w,y+h*.67f);hill.lineTo(x,y+h*.67f);hill.close();c.drawPath(hill,p);
+            p.setColor(Color.rgb(31,128,164));c.drawRect(x,y+h*.48f,x+w,y+h,p);p.setColor(Color.rgb(92,198,210));for(int i=0;i<7;i++)c.drawLine(x+15+i*47,y+h*(.58f+(i%3)*.06f),x+42+i*47,y+h*(.58f+(i%3)*.06f),p);
+            p.setColor(Color.rgb(244,181,76));c.drawCircle(x+w*.76f,y+h*.18f,23,p);
+            p.setColor(Color.rgb(245,184,89));Path fish=new Path();fish.moveTo(x+w*.22f,y+h*.69f);fish.quadTo(x+w*.36f,y+h*.59f,x+w*.51f,y+h*.69f);fish.quadTo(x+w*.36f,y+h*.79f,x+w*.22f,y+h*.69f);fish.close();c.drawPath(fish,p);fish.reset();fish.moveTo(x+w*.5f,y+h*.69f);fish.lineTo(x+w*.59f,y+h*.62f);fish.lineTo(x+w*.59f,y+h*.76f);fish.close();c.drawPath(fish,p);
+            p.setColor(Color.rgb(72,59,47));p.setStrokeWidth(5);c.drawLine(x+w*.78f,y+h*.32f,x+w*.53f,y+h*.57f,p);p.setStrokeWidth(2);p.setColor(WHITE);c.drawLine(x+w*.53f,y+h*.57f,x+w*.48f,y+h*.72f,p);p.setColor(Color.rgb(255,126,93));c.drawCircle(x+w*.48f,y+h*.72f,5,p);
+        }else if(index==2){
+            p.setColor(Color.rgb(42,133,67));c.drawRect(x,y+h*.65f,x+w,y+h,p);p.setColor(Color.rgb(102,176,79));for(int i=0;i<8;i++)c.drawCircle(x+i*52,y+h*.72f,28,p);
+            for(int i=0;i<4;i++){float fx=x+48+i*84,fy=y+h*(.49f+(i%2)*.08f);p.setColor(Color.rgb(57,117,58));c.drawRect(fx-4,fy+13,fx+4,y+h*.75f,p);p.setColor(i%2==0?Color.rgb(255,206,65):Color.rgb(245,133,155));for(int q=0;q<6;q++){double a=q*Math.PI/3;c.drawCircle(fx+(float)Math.cos(a)*17,fy+(float)Math.sin(a)*17,9,p);}p.setColor(Color.rgb(255,238,145));c.drawCircle(fx,fy,10,p);}
+            p.setColor(Color.rgb(255,239,173));c.drawCircle(x+w*.78f,y+h*.18f,24,p);
+            p.setColor(Color.rgb(255,255,255));for(int i=0;i<8;i++)c.drawCircle(x+24+i*43,y+h*(.17f+(i%3)*.05f),2,p);
+        }else if(index==3){
+            p.setColor(Color.rgb(102,156,110));Path hills=new Path();hills.moveTo(x,y+h*.7f);hills.quadTo(x+w*.4f,y+h*.35f,x+w*.63f,y+h*.7f);hills.quadTo(x+w*.84f,y+h*.44f,x+w,y+h*.66f);hills.lineTo(x+w,y+h);hills.lineTo(x,y+h);hills.close();c.drawPath(hills,p);
+            float bx=x+w*.25f,by=y+h*.39f;p.setColor(Color.rgb(177,116,73));c.drawRect(bx,by+58,bx+175,by+180,p);p.setColor(Color.rgb(209,149,91));Path roof=new Path();roof.moveTo(bx-18,by+60);roof.lineTo(bx+85,by-20);roof.lineTo(bx+193,by+60);roof.close();c.drawPath(roof,p);
+            p.setColor(Color.rgb(94,164,190));c.drawRect(bx+18,by+78,bx+55,by+112,p);c.drawRect(bx+120,by+78,bx+158,by+112,p);p.setColor(Color.rgb(95,61,44));c.drawRect(bx+72,by+110,bx+105,by+180,p);
+            p.setColor(Color.rgb(74,129,69));for(int i=0;i<6;i++)c.drawRect(x+i*62,y+h*.83f,x+i*62+58,y+h*.91f,p);p.setColor(Color.rgb(255,255,255));c.drawCircle(x+w*.78f,y+h*.18f,22,p);
+        }else{
+            p.setColor(Color.rgb(43,47,84));c.drawRoundRect(x+22,y+70,x+w-22,y+h-65,17,17,p);
+            p.setColor(Color.rgb(83,94,145));c.drawRect(x+38,y+92,x+w-38,y+h-88,p);
+            int[] cc={Color.rgb(255,191,64),Color.rgb(82,206,157),Color.rgb(107,169,255),Color.rgb(219,112,177)};
+            for(int i=0;i<4;i++){box(c,x+48+(i%2)*116,y+112+(i/2)*105,91,75,cc[i],12);txt(c,i==0?"MOVE":i==1?"LOOP":i==2?"PLAY":"CREATE",x+93+(i%2)*116,y+156+(i/2)*105,13,WHITE,true,Paint.Align.CENTER);}
+            p.setColor(Color.rgb(244,193,146));c.drawCircle(x+w*.5f,y+h*.8f,22,p);
+        }
+        c.restore();
+    }
+    private void onlineScreen(Canvas c){
+        bg(c,Color.rgb(13,20,32),Color.rgb(26,37,58));header(c,"ONLINE • VIDEO NGẮN");
+        String[] names={"@sunport.city","@fishing.world","@garden.defense","@pixel.builder","@scratch.studio"};
+        String[] captions={"Dạo một vòng Sunport City lúc hoàng hôn 🌆","Một buổi câu cá cực chill bên hồ 🎣","Khu vườn đầy màu sắc của mình 🌻","Ngôi nhà khối đầu tiên đã hoàn thành 🧱","Thử nghiệm game mới trong xưởng sáng tạo 🎮"};
+        String[] tags={"#SunportCity  #GameLife","#Fishing  #Chill","#GardenDefense  #Plants","#BlockBuild  #Creative","#Scratchbetter  #GameDev"};
+        box(c,250,70,390,430,Color.rgb(8,13,23),20);feedArt(c,feedIndex,260,80,370,410);
+        box(c,270,385,350,95,Color.argb(185,7,15,27),12);
+        txt(c,names[feedIndex],290,411,16,WHITE,true,Paint.Align.LEFT);txt(c,captions[feedIndex],290,438,13,WHITE,false,Paint.Align.LEFT);txt(c,tags[feedIndex],290,461,11,Color.rgb(190,220,255),false,Paint.Align.LEFT);
+        box(c,34,138,190,270,Color.argb(195,22,34,52),16);
+        txt(c,"BẢNG TIN",52,172,17,GOLD,true,Paint.Align.LEFT);txt(c,"ẢNH & VIDEO",52,203,14,WHITE,true,Paint.Align.LEFT);
+        txt(c,"Bài "+(feedIndex+1)+" / 5",52,246,14,Color.rgb(193,218,245),false,Paint.Align.LEFT);
+        txt(c,"Vuốt lên để xem",52,291,13,WHITE,false,Paint.Align.LEFT);txt(c,"bài tiếp theo",52,312,13,WHITE,false,Paint.Align.LEFT);
+        txt(c,"Vuốt xuống để",52,350,13,WHITE,false,Paint.Align.LEFT);txt(c,"quay lại bài trước",52,371,13,WHITE,false,Paint.Align.LEFT);
+        btn(c,"♥  THÍCH  "+feedLikes[feedIndex],690,300,235,48,feedLiked[feedIndex]?RED:Color.rgb(69,85,110));
+        btn(c,"BÌNH LUẬN",690,360,235,48,BLUE);btn(c,"CHIA SẺ",690,420,235,48,PURPLE);
+        if(commentsOpen){box(c,675,105,260,176,Color.rgb(30,45,66),15);txt(c,"BÌNH LUẬN MẪU",695,134,14,GOLD,true,Paint.Align.LEFT);txt(c,"@minigame: Ảnh đẹp quá!",695,169,12,WHITE,false,Paint.Align.LEFT);txt(c,"@player02: Game hay đó!",695,199,12,WHITE,false,Paint.Align.LEFT);txt(c,"@builder: Chờ bài tiếp theo",695,229,12,WHITE,false,Paint.Align.LEFT);txt(c,"Chạm BÌNH LUẬN để đóng",695,257,10,Color.rgb(192,209,228),false,Paint.Align.LEFT);}
+        txt(c,"FEED MẪU • CHƯA KẾT NỐI MÁY CHỦ",480,526,12,Color.rgb(165,186,211),true,Paint.Align.CENTER);
+    }
+
     private void buildScreen(Canvas c){
         bg(c,Color.rgb(116,190,230),Color.rgb(102,166,100));
         header(c,"XÂY NHÀ KIỂU KHỐI");
@@ -374,18 +437,19 @@ public final class GameView extends View {
     private void shopRow(Canvas c,float y,String title,String sub,int cost,String b){box(c,130,y,700,78,Color.rgb(43,67,94),13);txt(c,title,155,y+29,17,WHITE,true,Paint.Align.LEFT);txt(c,sub,155,y+53,12,WHITE,false,Paint.Align.LEFT);btn(c,b+" • "+cost,640,y+16,170,46,GREEN);}
     private void bagScreen(Canvas c){bg(c,Color.rgb(82,145,186),Color.rgb(48,88,124));header(c,"KHO ĐỒ");box(c,110,98,740,360,Color.argb(220,21,41,63),16);String[] it={"Cần câu cấp "+rod,"Nhân vật: "+new String[]{"Sở Tâm","Bá Thường","Lão Ngô"}[character],"Gỗ: "+wood,"Đá: "+stone,"Huy hiệu: "+gardenLevel};for(int i=0;i<it.length;i++){float x=150+(i%3)*220,y=145+(i/3)*125;box(c,x,y,190,90,Color.rgb(51,84,111),14);txt(c,"▣",x+95,y+35,23,GOLD,true,Paint.Align.CENTER);txt(c,it[i],x+95,y+66,14,WHITE,true,Paint.Align.CENTER);}btn(c,"ĐỔI NHÂN VẬT",385,395,190,45,PURPLE);}
     private void taskScreen(Canvas c){bg(c,Color.rgb(82,158,176),Color.rgb(66,105,142));header(c,"NHIỆM VỤ & THÀNH TÍCH");box(c,110,96,740,360,Color.argb(220,21,42,62),16);txt(c,"NHIỆM VỤ HẰNG NGÀY",145,134,19,WHITE,true,Paint.Align.LEFT);txt(c,"Hoàn thành "+dayFish+" lượt câu cá",150,190,17,WHITE,true,Paint.Align.LEFT);txt(c,"Phần thưởng: 100 xu",150,216,13,GOLD,false,Paint.Align.LEFT);btn(c,"NHẬN",685,165,120,48,GREEN);txt(c,"Thắng 1 màn Garden Defense",150,278,17,WHITE,true,Paint.Align.LEFT);txt(c,"Phần thưởng: 180 xu + XP",150,304,13,GOLD,false,Paint.Align.LEFT);txt(c,"Chơi 1 mini game",150,360,17,WHITE,true,Paint.Align.LEFT);txt(c,"Phần thưởng: 50 xu",150,386,13,GOLD,false,Paint.Align.LEFT);}
-    private void settingsScreen(Canvas c){bg(c,Color.rgb(75,109,153),Color.rgb(42,59,92));header(c,"CÀI ĐẶT");box(c,180,110,600,300,Color.argb(220,20,39,61),18);txt(c,"CHAT LGBT GAME",480,165,26,WHITE,true,Paint.Align.CENTER);txt(c,"Phiên bản 1.0.0 • Offline • Lưu tiến trình trên máy",480,208,14,WHITE,false,Paint.Align.CENTER);btn(c,"LÀM MỚI THÔNG BÁO",350,250,260,46,BLUE);btn(c,"VỀ SẢNH",350,315,260,46,GREEN);}
+    private void settingsScreen(Canvas c){bg(c,Color.rgb(75,109,153),Color.rgb(42,59,92));header(c,"CÀI ĐẶT");box(c,180,110,600,300,Color.argb(220,20,39,61),18);txt(c,"CHAT LGBT GAME",480,165,26,WHITE,true,Paint.Align.CENTER);txt(c,"Bản đồ offline • Online Feed dùng bài mẫu trong game",480,208,14,WHITE,false,Paint.Align.CENTER);btn(c,"LÀM MỚI THÔNG BÁO",350,250,260,46,BLUE);btn(c,"VỀ SẢNH",350,315,260,46,GREEN);}
     private void result(Canvas c,String title,String sub,boolean win){p.setColor(Color.argb(185,9,19,32));c.drawRect(0,0,W,H,p);box(c,260,170,440,210,Color.rgb(29,48,70),20);txt(c,title,480,220,25,win?GOLD:WHITE,true,Paint.Align.CENTER);txt(c,sub,480,258,15,WHITE,false,Paint.Align.CENTER);btn(c,"CHƠI LẠI",310,294,150,48,GREEN);btn(c,"VỀ SẢNH",500,294,150,48,BLUE);}
 
-    @Override public boolean onTouchEvent(MotionEvent e){float x=(e.getX()-ox)/scale,y=(e.getY()-oy)/scale;if(e.getAction()==MotionEvent.ACTION_DOWN){touch(x,y);return true;}if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){reeling=false;return true;}return true;}
+    @Override public boolean onTouchEvent(MotionEvent e){float x=(e.getX()-ox)/scale,y=(e.getY()-oy)/scale;if(e.getAction()==MotionEvent.ACTION_DOWN){touchStartX=x;touchStartY=y;if(!screen.equals("ONLINE"))touch(x,y);return true;}if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){reeling=false;if(screen.equals("ONLINE")&&e.getAction()==MotionEvent.ACTION_UP){float dx=x-touchStartX,dy=y-touchStartY;if(Math.abs(dy)>45&&Math.abs(dy)>Math.abs(dx))changeFeed(dy<0?1:-1);else touch(x,y);}return true;}return true;}
     private boolean hit(float x,float y,float a,float b,float w,float h){return x>=a&&x<=a+w&&y>=b&&y<=b+h;}
     private void touch(float x,float y){
         if(screen.equals("WORLD")||screen.equals("HUB")){
             if(y<62){
-                if(hit(x,y,620,10,82,41))screen="SHOP";
-                else if(hit(x,y,710,10,65,41))screen="BAG";
-                else if(hit(x,y,783,10,105,41))screen="TASK";
-                else if(hit(x,y,895,10,52,41))screen="SETTINGS";
+                if(hit(x,y,550,10,72,41))startOnline();
+                else if(hit(x,y,630,10,70,41))screen="SHOP";
+                else if(hit(x,y,706,10,58,41))screen="BAG";
+                else if(hit(x,y,770,10,105,41))screen="TASK";
+                else if(hit(x,y,883,10,62,41))screen="SETTINGS";
             }else if(nearby>=0&&hit(x,y,825,478,108,50)){
                 enterLandmark(landmarks[nearby]);
             }else if(y>65&&y<465){
@@ -407,6 +471,14 @@ public final class GameView extends View {
             else if(hit(x,y,915,397,40,40))moveCity(1,0);
             else if(y>110&&y<470&&x<750){if(inCar){carX=x;carY=y;}else{cityX=x;cityY=y;}if(cityJob&&Math.hypot((inCar?carX:cityX)-jobX,(inCar?carY:cityY)-jobY)<58){cityJob=false;earn(180,35);}}
             persist();invalidate();return;
+        }
+        if(screen.equals("ONLINE")){
+            if(hit(x,y,690,300,235,48)){feedLiked[feedIndex]=!feedLiked[feedIndex];feedLikes[feedIndex]=Math.max(0,feedLikes[feedIndex]+(feedLiked[feedIndex]?1:-1));save.edit().putBoolean("feedLiked"+feedIndex,feedLiked[feedIndex]).putInt("feedLikes"+feedIndex,feedLikes[feedIndex]).apply();}
+            else if(hit(x,y,690,360,235,48))commentsOpen=!commentsOpen;
+            else if(hit(x,y,690,420,235,48))notice="Đã sao chép liên kết bài viết mẫu";
+            else if(hit(x,y,55,430,150,48))changeFeed(-1);
+            else if(hit(x,y,755,485,170,40))changeFeed(1);
+            invalidate();return;
         }
         if(screen.equals("BUILD")){
             if(hit(x,y,14,12,50,43)){back();return;}
