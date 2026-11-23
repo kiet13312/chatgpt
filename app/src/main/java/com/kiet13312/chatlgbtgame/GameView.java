@@ -75,7 +75,7 @@ public final class GameView extends View {
         new Landmark(1120,950,"COLOR TAG ARENA","Sinh tồn né chạm","TAG",RED),
         new Landmark(1660,1450,"BUILD & CREATE","Sandbox tự do","SURVIVAL",GREEN),
         new Landmark(1030,570,"TOWN TYCOON","Xây dựng thị trấn","TYCOON",Color.rgb(205,151,67)),
-        new Landmark(1710,820,"VICE BAY CITY","Thành phố mở • xe • việc làm","CITY",BLUE),
+        new Landmark(1710,820,"SUNPORT CITY","Thành phố mở • xe • việc làm","CITY",BLUE),
         new Landmark(1420,1180,"KHU NHÀ Ở","Mua đất • xây nhà khối","BUILD",GOLD),
         new Landmark(2020,930,"SHOWROOM XE","Mua và lái thử xe","GARAGE",RED)
     };
@@ -88,7 +88,7 @@ public final class GameView extends View {
     public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);save=c.getSharedPreferences("chat_lgbt_game",Context.MODE_PRIVATE);
         coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);wood=save.getInt("wood",32);stone=save.getInt("stone",24);glass=save.getInt("glass",8);hasCar=save.getBoolean("hasCar",false);hasHouse=save.getBoolean("hasHouse",false);cityX=save.getFloat("cityX",280);cityY=save.getFloat("cityY",360);carX=save.getFloat("carX",280);carY=save.getFloat("carY",360);
         gardenArt=vector(R.drawable.garden_art);fishArt=vector(R.drawable.fishing_art);studioArt=vector(R.drawable.studio_art);
-        worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;String savedHouse=save.getString("houseBlocks","");for(int i=0;i<Math.min(houseBlocks.length,savedHouse.length());i++)houseBlocks[i]=(byte)Math.max(0,savedHouse.charAt(i)-48);
+        worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;String savedHouse=save.getString("houseBlocks","");for(int i=0;i<Math.min(houseBlocks.length,savedHouse.length());i++)houseBlocks[i]=(byte)Math.max(0,savedHouse.charAt(i)-48);for(byte v:houseBlocks)if(v>0)blocks++;
         for(int i=0;i<puzzleTiles.length;i++)puzzleTiles[i]=i/4;
         setFocusable(true);}
     private Bitmap vector(int id){try{Drawable d=getResources().getDrawable(id,null);Bitmap b=Bitmap.createBitmap(720,480,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);d.setBounds(0,0,720,480);d.draw(c);return b;}catch(Exception e){return null;}}
@@ -283,7 +283,7 @@ public final class GameView extends View {
         cityCar(c,220,345,Color.rgb(221,83,75),false);cityCar(c,490,292,Color.rgb(220,206,95),false);
         if(inCar)cityCar(c,carX,carY,Color.rgb(64,147,218),true);else cityNpc(c,cityX,cityY,Color.rgb(49,95,170));
         if(cityJob){p.setColor(GOLD);c.drawCircle(jobX,jobY,18,p);txt(c,"$",jobX,jobY+6,19,DARK,true,Paint.Align.CENTER);}
-        header(c,"VICE BAY • CITY LIFE");
+        header(c,"SUNPORT • CITY LIFE");
         box(c,14,78,224,92,Color.argb(220,18,36,57),12);
         txt(c,"THÀNH PHỐ MỞ",28,103,14,WHITE,true,Paint.Align.LEFT);
         txt(c,inCar?"Đang lái xe":"Đang đi bộ",28,128,13,Color.rgb(215,230,243),false,Paint.Align.LEFT);
@@ -291,7 +291,7 @@ public final class GameView extends View {
         btn(c,inCar?"XUỐNG XE":"LÁI XE",765,82,174,40,BLUE);
         btn(c,cityJob?"ĐANG GIAO HÀNG":"NHẬN VIỆC +180",765,130,174,40,GREEN);
         btn(c,hasCar?"XE CỦA TÔI":"MUA XE 300",765,178,174,40,PURPLE);
-        btn(c,hasHouse?"XÂY / VÀO NHÀ":"MUA NHÀ 450",765,226,174,40,GOLD);
+        btn(c,hasHouse?"XÂY / VÀO NHÀ":"MUA NHÀ 450",765,226,174,40,GOLD);\n        btn(c,"MUA VẬT LIỆU 100",765,274,174,40,Color.rgb(155,112,75));
         txt(c,"Việc làm • cửa hàng • gara • công viên",850,296,12,WHITE,true,Paint.Align.CENTER);
         txt(c,"Điều khiển",850,335,13,WHITE,true,Paint.Align.CENTER);
         btn(c,"▲",840,350,72,40,BLUE);btn(c,"◀",765,397,72,40,BLUE);btn(c,"▼",840,397,72,40,BLUE);btn(c,"▶",915,397,40,40,BLUE);
