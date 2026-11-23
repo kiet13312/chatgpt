@@ -46,7 +46,8 @@ public final class GameView extends View {
     private int arcadeScore,arcadeRound,selectedTile=-1,keeperLane=1,petHunger=45,petHappy=55,petClean=60,misses;
     private float noteY=-35,tagEnemyX=700,tagEnemyY=330;
     private final int[] puzzleTiles=new int[16];
-    private final int[] farmCrop=new int[6];
+    private final float[] farmCrop=new float[6];
+    private final boolean[] tagFound=new boolean[5];
     private static final class Landmark {
         final float x,y; final String name,subtitle,mode; final int color;
         Landmark(float x,float y,String name,String subtitle,String mode,int color){this.x=x;this.y=y;this.name=name;this.subtitle=subtitle;this.mode=mode;this.color=color;}
@@ -160,7 +161,7 @@ public final class GameView extends View {
         }
     }
     private void startArcade(String type){
-        screen="ARCADE";arcadeType=type;arcadeScore=0;arcadeRound=0;misses=0;over=false;t=0;noteY=-35;selectedTile=-1;raceLane=1;heroX=480;heroY=370;tagEnemyX=760;tagEnemyY=150;Arrays.fill(farmCrop,0);
+        screen="ARCADE";arcadeType=type;arcadeScore=0;arcadeRound=0;misses=0;over=false;t=0;noteY=-35;selectedTile=-1;raceLane=1;heroX=480;heroY=370;tagEnemyX=760;tagEnemyY=150;Arrays.fill(farmCrop,0);Arrays.fill(tagFound,false);
         if(type.equals("PUZZLE")){for(int i=0;i<16;i++)puzzleTiles[i]=i/4;for(int i=15;i>0;i--){int j=rng.nextInt(i+1),v=puzzleTiles[i];puzzleTiles[i]=puzzleTiles[j];puzzleTiles[j]=v;}}
         if(type.equals("SPORT"))keeperLane=rng.nextInt(3);
     }
@@ -194,7 +195,7 @@ public final class GameView extends View {
             case "STRATEGY":
                 txt(c,"CHIẾN THUẬT 3 ĐƯỜNG • TĂNG SỨC MẠNH ĐỘI",480,110,18,WHITE,true,Paint.Align.CENTER);for(int i=0;i<3;i++){box(c,180,155+i*92,600,72,Color.rgb(56,87,116),12);txt(c,"ĐƯỜNG "+(i+1),220,198+i*92,16,WHITE,true,Paint.Align.LEFT);box(c,350,180+i*92,Math.max(8,arcadeScore*3.9f),22,GREEN,10);btn(c,"TĂNG ĐỘI",650,169+i*92,110,42,PURPLE);}txt(c,"Tiến độ chung "+arcadeScore+"%",480,460,15,GOLD,true,Paint.Align.CENTER);break;
             case "TAG":
-                txt(c,"COLOR TAG • THU THẬP 5 SAO, TRÁNH BỊ CHẠM",480,110,18,WHITE,true,Paint.Align.CENTER);box(c,160,140,640,320,Color.rgb(70,129,98),20);p.setColor(GOLD);for(int i=0;i<5-arcadeScore;i++)c.drawCircle(240+(i*107)%510,190+(i*61)%205,10,p);p.setColor(BLUE);c.drawCircle(heroX,heroY,18,p);p.setColor(RED);c.drawCircle(tagEnemyX,tagEnemyY,20,p);btn(c,"◀",230,475,100,42,BLUE);btn(c,"▲",340,475,100,42,BLUE);btn(c,"▼",450,475,100,42,BLUE);btn(c,"▶",560,475,100,42,BLUE);txt(c,"Sao "+arcadeScore+"/5",480,140,15,GOLD,true,Paint.Align.CENTER);break;
+                txt(c,"COLOR TAG • THU THẬP 5 SAO, TRÁNH BỊ CHẠM",480,110,18,WHITE,true,Paint.Align.CENTER);box(c,160,140,640,320,Color.rgb(70,129,98),20);p.setColor(GOLD);for(int i=0;i<5;i++)if(!tagFound[i])c.drawCircle(240+(i*107)%510,190+(i*61)%205,10,p);p.setColor(BLUE);c.drawCircle(heroX,heroY,18,p);p.setColor(RED);c.drawCircle(tagEnemyX,tagEnemyY,20,p);btn(c,"◀",230,475,100,42,BLUE);btn(c,"▲",340,475,100,42,BLUE);btn(c,"▼",450,475,100,42,BLUE);btn(c,"▶",560,475,100,42,BLUE);txt(c,"Sao "+arcadeScore+"/5",480,140,15,GOLD,true,Paint.Align.CENTER);break;
             case "TYCOON":
                 txt(c,"TOWN TYCOON • XÂY CỬA HÀNG VÀ TĂNG THU NHẬP",480,115,18,WHITE,true,Paint.Align.CENTER);box(c,300,165,360,230,Color.rgb(232,207,154),18);box(c,375,235,210,160,Color.rgb(245,230,192),8);Path roof=new Path();roof.moveTo(350,238);roof.lineTo(480,158);roof.lineTo(610,238);roof.close();p.setColor(RED);c.drawPath(roof,p);txt(c,"SHOP",480,300,28,DARK,true,Paint.Align.CENTER);txt(c,"Xu: "+coins,480,430,18,GOLD,true,Paint.Align.CENTER);btn(c,"THU +10",300,455,150,48,GREEN);btn(c,"NÂNG CẤP 50",510,455,170,48,PURPLE);break;
         }
@@ -236,7 +237,21 @@ public final class GameView extends View {
 
     @Override public boolean onTouchEvent(MotionEvent e){float x=(e.getX()-ox)/scale,y=(e.getY()-oy)/scale;if(e.getAction()==MotionEvent.ACTION_DOWN){touch(x,y);return true;}if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){reeling=false;return true;}return true;}
     private boolean hit(float x,float y,float a,float b,float w,float h){return x>=a&&x<=a+w&&y>=b&&y<=b+h;}
-    private void touch(float x,float y){if(screen.equals("HUB")){if(hit(x,y,15,90,90,46))screen="SHOP";else if(hit(x,y,15,145,90,46))screen="BAG";else if(hit(x,y,15,200,90,46))screen="TASK";else if(hit(x,y,15,255,90,46))screen="SETTINGS";else if(hit(x,y,125,151,257,160))startGarden();else if(hit(x,y,394,151,257,160))startFish();else if(hit(x,y,663,151,282,160))startStudio();else if(hit(x,y,125,324,196,116))startTank();else if(hit(x,y,329,324,196,116))startHeist();else if(hit(x,y,533,324,196,116))startSurvival();else if(hit(x,y,737,324,208,116))startRace();else if(hit(x,y,756,465,170,43)){if(!giftClaimed){giftClaimed=true;coins+=100;energy=Math.min(100,energy+10);notice="Đã nhận quà đăng nhập +100 xu";persist();}else notice="Bạn đã nhận quà rồi";}else if(hit(x,y,125,454,820,65))screen="MINI";invalidate();return;}
+    private void touch(float x,float y){
+        if(screen.equals("WORLD")||screen.equals("HUB")){
+            if(y<62){
+                if(hit(x,y,620,10,82,41))screen="SHOP";
+                else if(hit(x,y,710,10,65,41))screen="BAG";
+                else if(hit(x,y,783,10,105,41))screen="TASK";
+                else if(hit(x,y,895,10,52,41))screen="SETTINGS";
+            }else if(nearby>=0&&hit(x,y,825,478,108,50)){
+                enterLandmark(landmarks[nearby]);
+            }else if(y>65&&y<465){
+                float wx=x-cameraX(),wy=y-cameraY();
+                targetX=Math.max(45,Math.min(WORLD_W-45,wx));targetY=Math.max(70,Math.min(WORLD_H-45,wy));moving=true;
+            }
+            persist();invalidate();return;
+        }
         if(hit(x,y,14,12,50,43)){back();return;}
         if(screen.equals("GARDEN")){if(over){if(hit(x,y,300,285,170,65))startGarden();else if(hit(x,y,490,285,170,65))back();return;}if(hit(x,y,22,100,122,88))plantPick="SUN";else if(hit(x,y,22,202,122,88))plantPick="PEA";else if(hit(x,y,22,304,122,88))plantPick="NUT";else if(hit(x,y,22,410,122,38))paused=!paused;else if(x>=170&&x<746&&y>=111&&y<421){int col=(int)((x-170)/64),row=(int)((y-111)/62),cost=plantPick.equals("SUN")?50:plantPick.equals("PEA")?100:75;if(garden[row][col]==null&&sun>=cost){sun-=cost;garden[row][col]=new Plant(plantPick);}}}
         else if(screen.equals("FISH")){if(over){if(hit(x,y,300,285,170,65))startFish();else if(hit(x,y,490,285,170,65))back();return;}if(hit(x,y,750,405,175,52)&&!casting&&!hooked){casting=true;fishWait=0;}else if(hit(x,y,750,405,175,52)&&hooked){reeling=true;fishPct=Math.min(100,fishPct+10);}else if(hit(x,y,750,468,175,40)){character=(character+1)%3;persist();}}
@@ -246,16 +261,51 @@ public final class GameView extends View {
         else if(screen.equals("SURVIVAL")){if(hit(x,y,840,135,92,48)){wood+=2;}else if(hit(x,y,840,197,92,48)){stone+=2;}else if(hit(x,y,840,259,92,48)){buildMode=true;}else if(hit(x,y,840,321,92,48)){if(wood>=4){wood-=4;stone+=3;}}else if(x>=150&&x<822&&y>=115&&y<495){int col=(int)((x-150)/84),row=(int)((y-115)/76),i=row*8+col;if(buildMode&&!blocksPlaced[i]&&wood>=2&&stone>=1){wood-=2;stone--;blocksPlaced[i]=true;blocks++;buildMode=false;}else if(blocksPlaced[i]){blocksPlaced[i]=false;blocks--;wood++;}}}
         else if(screen.equals("RACE")){if(over){if(hit(x,y,300,285,170,65))startRace();else if(hit(x,y,490,285,170,65))back();return;}if(hit(x,y,60,448,100,58))raceLane=Math.max(0,raceLane-1);else if(hit(x,y,175,448,100,58))raceLane=Math.min(2,raceLane+1);}
         else if(screen.equals("MINI")){if(hit(x,y,155,245,150,78)||hit(x,y,375,245,150,78)||hit(x,y,595,245,150,78)||hit(x,y,815,245,120,78)||hit(x,y,155,360,150,78)||hit(x,y,375,360,150,78)||hit(x,y,595,360,150,78)||hit(x,y,815,360,120,78)){miniScore++;earn(2,1);}}
+        else if(screen.equals("ARCADE")){
+            if(over){if(hit(x,y,300,285,170,65))startArcade(arcadeType);else if(hit(x,y,490,285,170,65))back();return;}
+            if(arcadeType.equals("PUZZLE")&&x>=285&&x<=673&&y>=140&&y<=468){
+                int col=(int)((x-285)/100),row=(int)((y-140)/82),idx=row*4+col;if(idx>=0&&idx<16&&puzzleTiles[idx]>=0){
+                    if(selectedTile<0)selectedTile=idx;else if(selectedTile==idx)selectedTile=-1;else if(puzzleTiles[selectedTile]==puzzleTiles[idx]){
+                        puzzleTiles[selectedTile]=-1;puzzleTiles[idx]=-1;selectedTile=-1;arcadeScore+=20;earn(8,3);boolean done=true;for(int v:puzzleTiles)if(v>=0)done=false;if(done){over=true;earn(120,30);}
+                    }else selectedTile=idx;
+                }
+            }else if(arcadeType.equals("RUNNER")){
+                if(hit(x,y,300,475,100,45))raceLane=Math.max(0,raceLane-1);else if(hit(x,y,560,475,100,45))raceLane=Math.min(2,raceLane+1);
+            }else if(arcadeType.equals("RHYTHM")){
+                if(hit(x,y,360,430,240,58)){if(noteY>=315&&noteY<=415){arcadeScore+=10;earn(5,2);noteY=-35;}else{misses++;if(misses>=4)over=true;}}
+            }else if(arcadeType.equals("PET")){
+                if(hit(x,y,210,465,150,48)){petHunger=Math.max(0,petHunger-35);petHappy=Math.min(100,petHappy+5);coins=Math.max(0,coins-2);}
+                else if(hit(x,y,405,465,150,48)){petHappy=Math.min(100,petHappy+22);petHunger=Math.min(100,petHunger+5);}
+                else if(hit(x,y,600,465,150,48)){petClean=Math.min(100,petClean+30);}
+                if(petHunger<45&&petHappy>75&&petClean>75){arcadeScore++;earn(20,5);}
+            }else if(arcadeType.equals("SPORT")){
+                int lane=hit(x,y,220,455,150,48)?0:hit(x,y,405,455,150,48)?1:hit(x,y,590,455,150,48)?2:-1;
+                if(lane>=0){if(lane!=keeperLane){arcadeScore++;earn(25,5);}arcadeRound++;keeperLane=rng.nextInt(3);if(arcadeRound>=5){over=true;if(arcadeScore>=3)earn(120,25);}}
+            }else if(arcadeType.equals("FARM")){
+                if(x>=270&&x<680&&y>=165&&y<400){int col=(int)((x-270)/145),row=(int)((y-165)/135),idx=row*3+col;if(idx>=0&&idx<6){if(farmCrop[idx]==0){farmCrop[idx]=1;}else if(farmCrop[idx]>=8){farmCrop[idx]=0;arcadeScore++;earn(35,6);}}}
+            }else if(arcadeType.equals("STRATEGY")){
+                if(y>=150&&y<455&&x>=640&&x<=780){if(coins>=20){coins-=20;arcadeRound++;arcadeScore=Math.min(100,arcadeScore+12);persist();if(arcadeScore>=100){over=true;earn(150,40);}}}
+            }else if(arcadeType.equals("TAG")){
+                if(y>=140&&y<=460&&x>=160&&x<=800){
+                    heroX=Math.max(180,Math.min(780,x));heroY=Math.max(160,Math.min(440,y));
+                    for(int i=0;i<5;i++)if(!tagFound[i]){float sx=240+(i*107)%510,sy=190+(i*61)%205;if(Math.hypot(heroX-sx,heroY-sy)<35){tagFound[i]=true;arcadeScore++;}}
+                    if(arcadeScore>=5){over=true;earn(150,35);}
+                }
+            }else if(arcadeType.equals("TYCOON")){
+                if(hit(x,y,300,455,150,48)){coins+=10;arcadeScore++;persist();}
+                else if(hit(x,y,510,455,170,48)){if(coins>=50){coins-=50;earn(15,4);}}
+            }
+        }
         else if(screen.equals("SHOP")){if(hit(x,y,640,166,170,46)){int cost=rod*250;if(coins>=cost){coins-=cost;rod++;persist();}else notice="Không đủ xu";}else if(hit(x,y,640,261,170,46)){if(coins>=150){coins-=150;energy=Math.min(100,energy+25);persist();}}else if(hit(x,y,640,356,170,46)){if(coins>=300){coins-=300;gems+=5;persist();}}}
         else if(screen.equals("BAG")){if(hit(x,y,385,395,190,45)){character=(character+1)%3;persist();}}
         else if(screen.equals("TASK")){if(hit(x,y,685,165,120,48)&&dayFish>0){dayFish=0;earn(100,10);}}
         else if(screen.equals("SETTINGS")){if(hit(x,y,350,315,260,46))back();}
         if(xp>=level*100){xp-=level*100;level++;gems+=2;}persist();invalidate();}
     private void addCode(String s){if(code.size()<8)code.add(s);else notice="Tối đa 8 khối trong bản này";}
-    private void back(){screen="HUB";over=false;paused=false;studioRun=false;reeling=false;persist();invalidate();}
+    private void back(){screen="WORLD";over=false;paused=false;studioRun=false;reeling=false;persist();invalidate();}
 
     public boolean backToHub(){
-        if ("HUB".equals(screen)) return false;
+        if ("WORLD".equals(screen)) return false;
         back();
         return true;
     }
