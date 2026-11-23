@@ -286,11 +286,16 @@ public final class GameView extends View {
             }else if(arcadeType.equals("STRATEGY")){
                 if(y>=150&&y<455&&x>=640&&x<=780){if(coins>=20){coins-=20;arcadeRound++;arcadeScore=Math.min(100,arcadeScore+12);persist();if(arcadeScore>=100){over=true;earn(150,40);}}}
             }else if(arcadeType.equals("TAG")){
-                if(y>=140&&y<=460&&x>=160&&x<=800){
+                if(y>=475&&y<=520){
+                    if(hit(x,y,230,475,100,42))heroX=Math.max(180,heroX-45);
+                    else if(hit(x,y,340,475,100,42))heroY=Math.max(160,heroY-45);
+                    else if(hit(x,y,450,475,100,42))heroY=Math.min(440,heroY+45);
+                    else if(hit(x,y,560,475,100,42))heroX=Math.min(780,heroX+45);
+                }else if(y>=140&&y<=460&&x>=160&&x<=800){
                     heroX=Math.max(180,Math.min(780,x));heroY=Math.max(160,Math.min(440,y));
-                    for(int i=0;i<5;i++)if(!tagFound[i]){float sx=240+(i*107)%510,sy=190+(i*61)%205;if(Math.hypot(heroX-sx,heroY-sy)<35){tagFound[i]=true;arcadeScore++;}}
-                    if(arcadeScore>=5){over=true;earn(150,35);}
                 }
+                for(int i=0;i<5;i++)if(!tagFound[i]){float sx=240+(i*107)%510,sy=190+(i*61)%205;if(Math.hypot(heroX-sx,heroY-sy)<35){tagFound[i]=true;arcadeScore++;}}
+                if(arcadeScore>=5){over=true;earn(150,35);}
             }else if(arcadeType.equals("TYCOON")){
                 if(hit(x,y,300,455,150,48)){coins+=10;arcadeScore++;persist();}
                 else if(hit(x,y,510,455,170,48)){if(coins>=50){coins-=50;earn(15,4);}}
