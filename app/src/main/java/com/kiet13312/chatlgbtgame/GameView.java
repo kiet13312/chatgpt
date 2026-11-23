@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.Random;
 
 public final class GameView extends View {
-    private static final float W=960,H=540;
+    private static final float W=960,H=540,WORLD_W=2400,WORLD_H=1600;
     private static final int WHITE=Color.WHITE, DARK=Color.rgb(20,37,60), GOLD=Color.rgb(255,193,56), GREEN=Color.rgb(56,169,105), BLUE=Color.rgb(57,133,218), PURPLE=Color.rgb(139,91,205), RED=Color.rgb(220,79,75);
     private final Paint p=new Paint(3); private final RectF rr=new RectF();
     private final SharedPreferences save; private final Random rng=new Random();
     private final Bitmap gardenArt,fishArt,studioArt;
-    private String screen="HUB",notice="Chào mừng đến với Chat LGBT Game!",plantPick="PEA";
+    private String screen="WORLD",notice="Chào mừng đến với Chat LGBT Game!",plantPick="PEA";
     private int coins,gems,energy,xp,level,rod,character,dayFish,miniScore,wood=8,stone=5,blocks;
     private boolean giftClaimed,paused,over,hooked,casting,reeling,studioRun,buildMode,heistWon;
     private int sun=200,kills,gardenLevel=1,fishKg=35,fishPct,heistGems,raceLane=1,raceTime,tankHp=3,tankPts,variable=1;
@@ -39,6 +39,38 @@ public final class GameView extends View {
     private final List<Foe> foes=new ArrayList<>();
     private final List<String> code=new ArrayList<>();
     private float scale=1,ox,oy;
+    private float worldX=1100,worldY=760,targetX=1100,targetY=760;
+    private boolean moving;
+    private int nearby=-1;
+    private String arcadeType="";
+    private int arcadeScore,arcadeRound,selectedTile=-1,keeperLane=1,petHunger=45,petHappy=55,petClean=60,misses;
+    private float noteY=-35,tagEnemyX=700,tagEnemyY=330;
+    private final int[] puzzleTiles=new int[16];
+    private final int[] farmCrop=new int[6];
+    private static final class Landmark {
+        final float x,y; final String name,subtitle,mode; final int color;
+        Landmark(float x,float y,String name,String subtitle,String mode,int color){this.x=x;this.y=y;this.name=name;this.subtitle=subtitle;this.mode=mode;this.color=color;}
+    }
+    private final Landmark[] landmarks={
+        new Landmark(350,300,"GARDEN DEFENSE","Vườn cây chiến thuật","GARDEN",GREEN),
+        new Landmark(900,250,"CÂU CÁ VẠN CÂN","Hồ câu cá & nâng cần","FISH",BLUE),
+        new Landmark(1580,250,"SCRATCHBETTER","Xưởng sáng tạo game","STUDIO",PURPLE),
+        new Landmark(2010,320,"SÂN THỂ THAO","Sút bóng ghi điểm","SPORT",GREEN),
+        new Landmark(650,620,"PUZZLE PARK","Ghép màu & giải đố","PUZZLE",PURPLE),
+        new Landmark(1320,500,"NHẠC HỘI","Nhịp điệu & phản xạ","RHYTHM",Color.rgb(219,94,153)),
+        new Landmark(250,880,"RUNNER TRAIL","Chạy vượt chướng ngại","RUNNER",GOLD),
+        new Landmark(880,1110,"TANK TRACK","Đường đua xe tăng","TANK",BLUE),
+        new Landmark(420,1290,"SPEED CIRCUIT","Đua xe 3 làn","RACE",RED),
+        new Landmark(360,1480,"PET VILLAGE","Chăm sóc thú cưng","PET",Color.rgb(232,143,177)),
+        new Landmark(1300,1370,"FARM & TYCOON","Nông trại và cửa hàng","FARM",GREEN),
+        new Landmark(1800,1050,"PIXEL ISLAND","Sinh tồn & xây dựng","SURVIVAL",Color.rgb(145,112,75)),
+        new Landmark(2110,1200,"GEM CITY","Mê cung tìm kho báu","HEIST",Color.rgb(170,118,68)),
+        new Landmark(1950,680,"ARCADE PLAZA","Mini game tổng hợp","MINI",GOLD),
+        new Landmark(2210,450,"STRATEGY CASTLE","Chiến thuật thủ thành","MOBA",PURPLE),
+        new Landmark(1120,950,"COLOR TAG ARENA","Sinh tồn né chạm","TAG",RED),
+        new Landmark(1660,1450,"BUILD & CREATE","Sandbox tự do","SURVIVAL",GREEN),
+        new Landmark(1030,570,"TOWN TYCOON","Xây dựng thị trấn","TYCOON",Color.rgb(205,151,67))
+    };
 
     private static final class Plant { String type; int hp; float cd; Plant(String t){type=t;hp=t.equals("NUT")?220:70;} }
     private static final class Zombie { int row,hp=100;float x,bite;Zombie(int r){row=r;x=790;} }
@@ -47,13 +79,16 @@ public final class GameView extends View {
 
     public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);save=c.getSharedPreferences("chat_lgbt_game",Context.MODE_PRIVATE);
         coins=save.getInt("coins",1200);gems=save.getInt("gems",40);energy=save.getInt("energy",100);xp=save.getInt("xp",0);level=save.getInt("level",1);rod=save.getInt("rod",1);character=save.getInt("character",0);gardenLevel=save.getInt("gardenLevel",1);dayFish=save.getInt("dayFish",0);giftClaimed=save.getBoolean("gift",false);variable=save.getInt("variable",1);
-        gardenArt=vector(R.drawable.garden_art);fishArt=vector(R.drawable.fishing_art);studioArt=vector(R.drawable.studio_art);setFocusable(true);}
+        gardenArt=vector(R.drawable.garden_art);fishArt=vector(R.drawable.fishing_art);studioArt=vector(R.drawable.studio_art);
+        worldX=save.getFloat("worldX",1100);worldY=save.getFloat("worldY",760);targetX=worldX;targetY=worldY;
+        for(int i=0;i<puzzleTiles.length;i++)puzzleTiles[i]=i/4;
+        setFocusable(true);}
     private Bitmap vector(int id){try{Drawable d=getResources().getDrawable(id,null);Bitmap b=Bitmap.createBitmap(720,480,Bitmap.Config.ARGB_8888);Canvas c=new Canvas(b);d.setBounds(0,0,720,480);d.draw(c);return b;}catch(Exception e){return null;}}
-    private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).apply();}
+    private void persist(){save.edit().putInt("coins",coins).putInt("gems",gems).putInt("energy",energy).putInt("xp",xp).putInt("level",level).putInt("rod",rod).putInt("character",character).putInt("gardenLevel",gardenLevel).putInt("dayFish",dayFish).putBoolean("gift",giftClaimed).putInt("variable",variable).putFloat("worldX",worldX).putFloat("worldY",worldY).apply();}
 
     @Override protected void onDraw(Canvas c){super.onDraw(c);scale=Math.min(getWidth()/W,getHeight()/H);ox=(getWidth()-W*scale)/2;oy=(getHeight()-H*scale)/2;c.save();c.translate(ox,oy);c.scale(scale,scale);long now=System.nanoTime();float dt=last==0?.016f:Math.min(.05f,(now-last)/1e9f);last=now;tick(dt);
-        switch(screen){case "HUB":hub(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
-    private void tick(float d){if(screen.equals("GARDEN")&&!paused&&!over)gardenTick(d);if(screen.equals("FISH")&&!over)fishTick(d);if(screen.equals("STUDIO")&&studioRun){studioX+=d*(35+variable*5);if(studioX>915)studioX=705;}if(screen.equals("TANK")&&!over)tankTick(d);if(screen.equals("HEIST")&&!over){guardX-=d*14;if(guardX<220)guardX=760;if(Math.abs(guardX-heroX)<25&&Math.abs(heroY-430)<42)over=true;}if(screen.equals("RACE")&&!over)raceTick(d);}
+        switch(screen){case "HUB":case "WORLD":worldScreen(c);break;case "GARDEN":gardenScreen(c);break;case "FISH":fishScreen(c);break;case "STUDIO":studioScreen(c);break;case "TANK":tankScreen(c);break;case "HEIST":heistScreen(c);break;case "SURVIVAL":survivalScreen(c);break;case "RACE":raceScreen(c);break;case "MINI":miniScreen(c);break;case "ARCADE":arcadeScreen(c);break;case "SHOP":shopScreen(c);break;case "BAG":bagScreen(c);break;case "TASK":taskScreen(c);break;default:settingsScreen(c);}c.restore();postInvalidateDelayed(32);}
+    private void tick(float d){if(screen.equals("GARDEN")&&!paused&&!over)gardenTick(d);if(screen.equals("FISH")&&!over)fishTick(d);if(screen.equals("STUDIO")&&studioRun){studioX+=d*(35+variable*5);if(studioX>915)studioX=705;}if(screen.equals("TANK")&&!over)tankTick(d);if(screen.equals("HEIST")&&!over){guardX-=d*14;if(guardX<220)guardX=760;if(Math.abs(guardX-heroX)<25&&Math.abs(heroY-430)<42)over=true;}if(screen.equals("RACE")&&!over)raceTick(d);if(screen.equals("WORLD"))worldTick(d);if(screen.equals("ARCADE"))arcadeTick(d);}
     private void bg(Canvas c,int a,int b){p.setShader(new LinearGradient(0,0,0,H,a,b,Shader.TileMode.CLAMP));c.drawRect(0,0,W,H,p);p.setShader(null);}
     private void txt(Canvas c,String s,float x,float y,float z,int color,boolean bold,Paint.Align align){p.setColor(color);p.setTextSize(z);p.setTextAlign(align);p.setTypeface(Typeface.create("sans-serif-rounded",bold?Typeface.BOLD:Typeface.NORMAL));p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
     private void box(Canvas c,float x,float y,float w,float h,int color,float rad){rr.set(x,y,x+w,y+h);p.setColor(color);p.setStyle(Paint.Style.FILL);p.clearShadowLayer();c.drawRoundRect(rr,rad,rad,p);p.setColor(Color.argb(45,255,255,255));p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRoundRect(rr,rad,rad,p);p.setStyle(Paint.Style.FILL);}
