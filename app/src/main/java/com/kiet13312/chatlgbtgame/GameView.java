@@ -291,7 +291,8 @@ public final class GameView extends View {
         btn(c,inCar?"XUỐNG XE":"LÁI XE",765,82,174,40,BLUE);
         btn(c,cityJob?"ĐANG GIAO HÀNG":"NHẬN VIỆC +180",765,130,174,40,GREEN);
         btn(c,hasCar?"XE CỦA TÔI":"MUA XE 300",765,178,174,40,PURPLE);
-        btn(c,hasHouse?"XÂY / VÀO NHÀ":"MUA NHÀ 450",765,226,174,40,GOLD);\n        btn(c,"MUA VẬT LIỆU 100",765,274,174,40,Color.rgb(155,112,75));
+        btn(c,hasHouse?"XÂY / VÀO NHÀ":"MUA NHÀ 450",765,226,174,40,GOLD);
+        btn(c,"MUA VẬT LIỆU 100",765,274,174,40,Color.rgb(155,112,75));
         txt(c,"Việc làm • cửa hàng • gara • công viên",850,296,12,WHITE,true,Paint.Align.CENTER);
         txt(c,"Điều khiển",850,335,13,WHITE,true,Paint.Align.CENTER);
         btn(c,"▲",840,350,72,40,BLUE);btn(c,"◀",765,397,72,40,BLUE);btn(c,"▼",840,397,72,40,BLUE);btn(c,"▶",915,397,40,40,BLUE);
